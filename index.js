@@ -1,18 +1,17 @@
 /* eslint-disable no-console */
-const express = require('express');
-
-// Creamos una nueva aplicacion de express
-const app = express();
+require('dotenv').config();
+const { server } = require('./src/app');
 
 // Puerto
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// Sistema de rutas
-const routerApi = require('./src/routes/index');
-
-// Le decimos que escuche en el puerto 3000
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}!`);
+// Le decimos que escuche en el puerto especificado
+server.listen(port, () => {
+  console.log('🚀 ========================================');
+  console.log(`🚀 SmartFloors Backend iniciado en puerto ${port}`);
+  console.log(`🚀 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 Health check: http://localhost:${port}/health`);
+  console.log(`🚀 API REST: http://localhost:${port}/api/v1/`);
+  console.log(`🚀 WebSocket: ws://localhost:${port}`);
+  console.log('🚀 ========================================');
 });
-
-routerApi(app);
