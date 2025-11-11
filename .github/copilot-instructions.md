@@ -248,6 +248,9 @@ io.emit('evento', datos);
 
 ### Métricas por Piso
 
+- **buildingId**: ID del edificio (número)
+- **buildingName**: Nombre del edificio (configurable en .env)
+- **floorId**: ID del piso (1-N)
 - **occupancy**: 0-100 (número de personas)
 - **temperature**: 18-30°C (temperatura ambiente)
 - **humidity**: 30-70% (humedad relativa)
@@ -267,6 +270,13 @@ io.emit('evento', datos);
 1. **Promedio Móvil**: Últimas 10 observaciones
 2. **Regresión Lineal Simple**: Tendencia histórica
 3. **Método Híbrido**: Promedio ponderado de ambos (60% MA + 40% LR)
+
+### Métricas Predichas
+
+- ✅ Ocupación futura
+- ✅ Temperatura
+- ✅ Humedad
+- ✅ Consumo energético
 
 ### Generar Predicciones
 
@@ -306,6 +316,7 @@ NODE_ENV=development         # Ambiente
 CORS_ORIGIN=http://...       # URL frontend
 SIMULATION_INTERVAL=60000    # Intervalo simulación (ms)
 NUMBER_OF_FLOORS=5          # Número de pisos
+BUILDING_NAME=Edificio Principal  # Nombre del edificio
 ```
 
 ## Testing

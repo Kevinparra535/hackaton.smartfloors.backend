@@ -188,6 +188,47 @@ class PredictionService {
   }
 
   /**
+   * Predice humedad futura
+   */
+  predictHumidity(history, minutesAhead = 60) {
+    if (!history || history.length === 0) {
+      return { predictions: [], method: 'none', confidence: 0 };
+    }
+
+    const recentHistory = history.slice(-30);
+    const values = recentHistory.map((h) => h.humidity);
+
+    const maValue = this.movingAverage(values, 10);
+
+    const dataPoints = recentHistory.map((h, index) => ({
+      x: index,
+      y: h.humidity,
+    }));
+
+    const regression = this.linearRegression(dataPoints);
+
+    const predictions = [];
+    for (let i = 10; i <= minutesAhead; i += 10) {
+      const futureIdx = recentHistory.length + i;
+      const lrVal = regression.predict(futureIdx);
+      const prediction = (maValue * 0.6 + lrVal * 0.4);
+
+      predictions.push({
+        minutesAhead: i,
+        humidity: Math.round(Math.max(30, Math.min(70, prediction))), // Limitar entre 30-70%
+        timestamp: new Date(Date.now() + i * 60000).toISOString(),
+      });
+    }
+
+    return {
+      predictions,
+      method: 'hybrid',
+      confidence: this.calculateConfidence(recentHistory),
+      currentValue: values[values.length - 1],
+    };
+  }
+
+  /**
    * Calcula nivel de confianza basado en la varianza de los datos
    */
   calculateConfidence(history) {
@@ -212,6 +253,7 @@ class PredictionService {
     return {
       occupancy: this.predictOccupancy(history, minutesAhead),
       temperature: this.predictTemperature(history, minutesAhead),
+      humidity: this.predictHumidity(history, minutesAhead),
       powerConsumption: this.predictPowerConsumption(history, minutesAhead),
       timestamp: new Date().toISOString(),
     };

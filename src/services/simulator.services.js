@@ -8,6 +8,8 @@
 class FloorSimulator {
   constructor(numberOfFloors = 5) {
     this.numberOfFloors = numberOfFloors;
+    this.buildingId = 1; // ID del edificio
+    this.buildingName = process.env.BUILDING_NAME || 'Edificio Principal';
     this.currentData = this.initializeFloors();
     this.history = [];
   }
@@ -19,6 +21,8 @@ class FloorSimulator {
     const floors = [];
     for (let i = 1; i <= this.numberOfFloors; i++) {
       floors.push({
+        buildingId: this.buildingId,
+        buildingName: this.buildingName,
         floorId: i,
         name: `Piso ${i}`,
         occupancy: this.getRandomOccupancy(),
@@ -96,6 +100,8 @@ class FloorSimulator {
       const powerConsumption = this.calculatePowerConsumption(occupancy, temperature);
 
       const newFloorData = {
+        buildingId: this.buildingId,
+        buildingName: this.buildingName,
         floorId: floor.floorId,
         name: floor.name,
         occupancy,
