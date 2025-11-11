@@ -9,6 +9,8 @@ Backend para monitoreo inteligente de pisos en tiempo real con predicciones y de
 - **WebSocket (Socket.IO)**: Transmisión de datos en tiempo real al frontend
 - **Predicciones**: Algoritmos de promedio móvil y regresión lineal para predecir a +60 minutos
 - **Detección de anomalías**: Sistema inteligente de alertas con recomendaciones
+- **Validación de datos**: Schemas con Joi para validar todas las peticiones
+- **Manejo de errores**: Sistema centralizado con @hapi/boom
 
 ## 📊 Métricas monitoreadas
 
@@ -22,6 +24,8 @@ Por cada piso se monitorean:
 
 - **Node.js + Express**: Servidor backend
 - **Socket.IO**: Comunicación en tiempo real
+- **Joi**: Validación de schemas
+- **@hapi/boom**: Manejo de errores HTTP
 - **CORS**: Configuración de origen cruzado
 - **dotenv**: Variables de entorno
 
@@ -31,19 +35,22 @@ Por cada piso se monitorean:
 backend/
 ├── src/
 │   ├── app.js                      # Configuración de Express + Socket.IO
-│   ├── config/
-│   │   └── env.ts                  # Configuración de variables de entorno
 │   ├── controllers/
 │   │   └── floors.controller.js    # Controladores de API REST
+│   ├── middlewares/
+│   │   ├── validator.handler.js    # Middleware de validación con Joi
+│   │   └── errors.handler.js       # Middleware de manejo de errores
 │   ├── models/                     # (Para futuros modelos de BD)
 │   ├── routes/
 │   │   ├── index.js                # Sistema de enrutamiento
 │   │   ├── home.router.js          # Rutas del home
-│   │   └── floors.router.js        # Rutas de pisos
+│   │   └── floors.router.js        # Rutas de pisos con validaciones
+│   ├── schemas/
+│   │   └── validator.schema.js     # Schemas de validación con Joi
 │   ├── services/
-│   │   ├── simulator.js            # Generador de datos simulados
-│   │   ├── prediction.js           # Servicio de predicciones
-│   │   └── alerts.js               # Detección de anomalías
+│   │   ├── simulator.service.js    # Generador de datos simulados
+│   │   ├── prediction.service.js   # Servicio de predicciones
+│   │   └── alerts.service.js       # Detección de anomalías
 │   ├── sockets/
 │   │   └── index.js                # Configuración de Socket.IO
 │   └── utils/
@@ -55,15 +62,21 @@ backend/
 ├── .gitignore                      # Archivos ignorados por Git
 ├── index.js                        # Punto de entrada de la aplicación
 ├── package.json                    # Dependencias y scripts
-└── README.md                       # Esta documentación
+├── README.md                       # Esta documentación
+├── VALIDATION.md                   # Documentación de validaciones
+└── SmartFloors.postman_collection.json  # Colección de Postman
 ```
 
 ## 🚀 Instalación
 
+> **📖 Para instrucciones detalladas paso a paso, consulta [INSTALLATION.md](INSTALLATION.md)**
+
+### Instalación Rápida
+
 ### 1. Clonar el repositorio
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Kevinparra535/hackaton.smartfloors.backend.git
 cd hackaton.smartfloors.backend
 ```
 
@@ -75,14 +88,12 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-Copiar el archivo `.env.example` a `.env`:
-
 ```bash
 cp .env.example .env
+# Editar .env con tus configuraciones
 ```
 
-Editar `.env` según sea necesario:
-
+Variables principales:
 ```env
 PORT=3000
 NODE_ENV=development
@@ -103,27 +114,43 @@ npm run dev
 npm start
 ```
 
+### 5. Verificar funcionamiento
+
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Obtener todos los pisos
+curl http://localhost:3000/api/v1/floors
+```
+
 ## 📡 API REST Endpoints
 
 ### Base URL: `http://localhost:3000/api/v1`
 
 #### 🏢 Pisos
 
-- **GET** `/floors` - Obtener todos los pisos
-- **GET** `/floors/:id` - Obtener un piso específico
-- **GET** `/floors/:id/history?limit=60` - Obtener historial de un piso
-- **GET** `/floors/:id/predictions?minutesAhead=60` - Obtener predicciones
-- **GET** `/floors/stats` - Estadísticas generales
+| Método | Endpoint | Descripción | Validaciones |
+|--------|----------|-------------|--------------|
+| **GET** | `/floors` | Obtener todos los pisos | - |
+| **GET** | `/floors/stats` | Estadísticas generales | - |
+| **GET** | `/floors/:id` | Obtener un piso específico | `id`: 1-100 |
+| **GET** | `/floors/:id/history` | Historial de un piso | `id`: 1-100<br>`limit`: 1-1440 (opcional) |
+| **GET** | `/floors/:id/predictions` | Predicciones de un piso | `id`: 1-100<br>`minutesAhead`: 10-180 (opcional) |
 
 #### 🚨 Alertas
 
-- **GET** `/alerts` - Obtener todas las alertas activas
+| Método | Endpoint | Descripción | Validaciones |
+|--------|----------|-------------|--------------|
+| **GET** | `/alerts` | Obtener todas las alertas activas | - |
 
 #### ❤️ Health Check
 
-- **GET** `/health` - Verificar estado del servidor
+| Método | Endpoint | Descripción | Validaciones |
+|--------|----------|-------------|--------------|
+| **GET** | `/health` | Verificar estado del servidor | - |
 
-### Ejemplo de respuesta
+### Ejemplo de respuesta exitosa
 
 ```json
 {
@@ -138,6 +165,18 @@ npm start
     "timestamp": "2025-11-11T10:30:00.000Z"
   },
   "timestamp": "2025-11-11T10:30:00.000Z"
+}
+```
+
+### Ejemplo de respuesta con error de validación
+
+```json
+{
+  "error": {
+    "statusCode": 400,
+    "error": "Bad Request",
+    "message": "El ID debe ser un número entero"
+  }
 }
 ```
 
@@ -213,12 +252,52 @@ Cada alerta incluye:
 
 ## 🧪 Testing
 
+### Usando cURL
+
+```bash
+# Obtener todos los pisos
+curl http://localhost:3000/api/v1/floors
+
+# Obtener piso específico
+curl http://localhost:3000/api/v1/floors/1
+
+# Obtener historial con límite
+curl "http://localhost:3000/api/v1/floors/1/history?limit=30"
+
+# Obtener predicciones
+curl "http://localhost:3000/api/v1/floors/1/predictions?minutesAhead=60"
+
+# Obtener estadísticas
+curl http://localhost:3000/api/v1/floors/stats
+
+# Obtener alertas
+curl http://localhost:3000/api/v1/alerts
+```
+
+### Usando Postman
+
+Importa la colección de Postman incluida en el proyecto:
+- **Archivo**: `SmartFloors.postman_collection.json`
+- Incluye todos los endpoints con ejemplos
+- Variables de entorno pre-configuradas
+- Tests automáticos incluidos
+
+### Linting y formato
+
 ```bash
 # Ejecutar linter
 npm run lint
 
 # Formatear código
 npm run format
+```
+
+### Script de validaciones
+
+```bash
+# Ejecutar pruebas de validación
+chmod +x test-validation.sh
+./test-validation.sh
 ```
 
 ## 📦 Deploy
@@ -260,7 +339,26 @@ SIMULATION_INTERVAL=30000  # 30 segundos
 - Los datos se simulan automáticamente cada 60 segundos (configurable)
 - El historial se mantiene en memoria (últimas 24 horas por piso)
 - Las alertas antiguas se limpian automáticamente cada hora
+- Todas las rutas están validadas con Joi
+- Los errores se manejan de forma centralizada con @hapi/boom
 - Para persistencia de datos, considerar integrar MongoDB
+
+## 📚 Documentación adicional
+
+- **[INSTALLATION.md](INSTALLATION.md)**: Guía completa de instalación paso a paso
+- **[VALIDATION.md](VALIDATION.md)**: Documentación completa de validaciones y schemas
+- **[API_TESTS.md](API_TESTS.md)**: Ejemplos de pruebas de la API con cURL
+- **[SCHEMAS_IMPLEMENTED.md](SCHEMAS_IMPLEMENTED.md)**: Resumen de schemas implementados
+- **[POSTMAN_GUIDE.md](POSTMAN_GUIDE.md)**: Guía detallada para usar Postman
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)**: Índice completo de toda la documentación
+- **SmartFloors.postman_collection.json**: Colección de Postman para testing
+
+## 🎯 Enlaces Rápidos
+
+- 📖 [Instalación Detallada](INSTALLATION.md)
+- 🧪 [Guía de Postman](POSTMAN_GUIDE.md)
+- ✅ [Validaciones](VALIDATION.md)
+- 📚 [Índice de Documentación](DOCUMENTATION_INDEX.md)
 
 ## 🤝 Contribución
 

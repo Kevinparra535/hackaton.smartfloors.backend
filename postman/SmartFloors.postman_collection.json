@@ -1,0 +1,529 @@
+{
+  "info": {
+    "name": "SmartFloors Backend API",
+    "_postman_id": "smartfloors-api-2025",
+    "description": "Colección completa de endpoints para el backend de SmartFloors\n\n## Características\n- Monitoreo en tiempo real de pisos\n- Predicciones con ML\n- Detección de anomalías\n- Alertas inteligentes\n\n## Variables\n- `base_url`: http://localhost:3000\n- `api_version`: v1\n\n## Autor\nSmartFloors Team - Hackathon 2025",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "api_version",
+      "value": "v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Check Server Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has status OK\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"OK\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response has timestamp\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('timestamp');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica que el servidor esté funcionando correctamente"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para verificar el estado del servidor"
+    },
+    {
+      "name": "Pisos",
+      "item": [
+        {
+          "name": "Get All Floors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is successful\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Each floor has required properties\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function(floor) {",
+                  "        pm.expect(floor).to.have.property('floorId');",
+                  "        pm.expect(floor).to.have.property('name');",
+                  "        pm.expect(floor).to.have.property('occupancy');",
+                  "        pm.expect(floor).to.have.property('temperature');",
+                  "        pm.expect(floor).to.have.property('humidity');",
+                  "        pm.expect(floor).to.have.property('powerConsumption');",
+                  "        pm.expect(floor).to.have.property('timestamp');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors"]
+            },
+            "description": "Obtiene los datos actuales de todos los pisos del edificio"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Floor By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is successful\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Floor data has correct structure\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('floorId');",
+                  "    pm.expect(jsonData.data.floorId).to.eql(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1"]
+            },
+            "description": "Obtiene los datos actuales de un piso específico por su ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Floor Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has statistics\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('totalFloors');",
+                  "    pm.expect(jsonData.data).to.have.property('totalOccupancy');",
+                  "    pm.expect(jsonData.data).to.have.property('averageTemperature');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "stats"]
+            },
+            "description": "Obtiene estadísticas generales de todos los pisos"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Floor History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has history data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('history');",
+                  "    pm.expect(jsonData.data.history).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1/history?limit=60",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "60",
+                  "description": "Número de registros a obtener (1-1440)"
+                }
+              ]
+            },
+            "description": "Obtiene el historial de datos de un piso específico"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Floor Predictions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has predictions\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('predictions');",
+                  "    pm.expect(jsonData.data.predictions).to.have.property('occupancy');",
+                  "    pm.expect(jsonData.data.predictions).to.have.property('temperature');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1/predictions?minutesAhead=60",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1", "predictions"],
+              "query": [
+                {
+                  "key": "minutesAhead",
+                  "value": "60",
+                  "description": "Minutos a predecir en el futuro (10-180)"
+                }
+              ]
+            },
+            "description": "Obtiene predicciones futuras para un piso específico usando ML"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints relacionados con los datos de los pisos"
+    },
+    {
+      "name": "Alertas",
+      "item": [
+        {
+          "name": "Get All Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has alerts\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('alerts');",
+                  "    pm.expect(jsonData.data.alerts).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"]
+            },
+            "description": "Obtiene todas las alertas activas del sistema de detección de anomalías"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gestión de alertas y anomalías"
+    },
+    {
+      "name": "Validaciones (Errores esperados)",
+      "item": [
+        {
+          "name": "Invalid Floor ID - Not a Number",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message is correct\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"número\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/abc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "abc"]
+            },
+            "description": "Prueba validación: ID debe ser numérico"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Floor ID - Out of Range (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions minimum\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"mayor\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "0"]
+            },
+            "description": "Prueba validación: ID debe ser >= 1"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Floor ID - Out of Range (101)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions maximum\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"menor\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/101",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "101"]
+            },
+            "description": "Prueba validación: ID debe ser <= 100"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid History Limit - Too High",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions limit\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"1440\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1/history?limit=2000",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2000"
+                }
+              ]
+            },
+            "description": "Prueba validación: limit debe ser <= 1440"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Predictions - Minutes Too Low",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions minimum minutes\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"10\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1/predictions?minutesAhead=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1", "predictions"],
+              "query": [
+                {
+                  "key": "minutesAhead",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Prueba validación: minutesAhead debe ser >= 10"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Predictions - Minutes Too High",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions maximum minutes\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"180\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/floors/1/predictions?minutesAhead=200",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "floors", "1", "predictions"],
+              "query": [
+                {
+                  "key": "minutesAhead",
+                  "value": "200"
+                }
+              ]
+            },
+            "description": "Prueba validación: minutesAhead debe ser <= 180"
+          },
+          "response": []
+        }
+      ],
+      "description": "Pruebas de validación de schemas con Joi - Todos estos endpoints deben retornar error 400"
+    }
+  ]
+}
