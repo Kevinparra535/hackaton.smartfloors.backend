@@ -7,12 +7,12 @@ const app = express();
 // Puerto
 const port = 3000;
 
-// Le pasamos una ruta
-app.get('/', (req, res) => {
-  res.send('Hello world!'); // Respuesta
-});
+// Sistema de rutas
+const routerApi = require('./src/routes/index');
 
 // Le decimos que escuche en el puerto 3000
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}!`);
 });
+
+routerApi(app);
