@@ -5,9 +5,9 @@
  * Maneja comunicación en tiempo real con el frontend
  */
 
-const FloorSimulator = require('../services/simulator');
-const PredictionService = require('../services/prediction');
-const AlertService = require('../services/alerts');
+const FloorSimulator = require('../services/simulator.services');
+const PredictionService = require('../services/prediction.services');
+const AlertService = require('../services/alerts.services');
 
 let simulator;
 let predictionService;

@@ -21,4 +21,15 @@ function errorHandler(err, req, res, next) {
   res.render('error', { error: err });
 }
 
-module.exports = { logErrors, errorHandler };
+// Detector de errores para boom
+function boomErrorHandler(err, req, res, next) {
+  if (err.isBoom) {
+    const { output } = err;
+    res.status(output.statusCode).json({
+      error: output.payload,
+    });
+  }
+  next(err);
+}
+
+module.exports = { logErrors, errorHandler, boomErrorHandler };

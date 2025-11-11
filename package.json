@@ -9,20 +9,26 @@
     "lint": "eslint .",
     "format": "prettier --write ."
   },
-  "keywords": ["smartfloors", "iot", "predictions", "websockets"],
+  "keywords": [
+    "smartfloors",
+    "iot",
+    "predictions",
+    "websockets"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.6.1",
+    "@hapi/boom": "^10.0.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
     "eslint": "^8.50.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "nodemon": "^3.0.1",
     "prettier": "^3.0.3"
   }
 }

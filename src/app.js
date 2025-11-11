@@ -27,7 +27,7 @@ routerApi(app);
 
 // Socket.IO initialization
 const initializeSockets = require('./sockets/index');
-const { errorHandler, logErrors } = require('./middlewares/errors.handler');
+const { errorHandler, logErrors, boomErrorHandler } = require('./middlewares/errors.handler');
 initializeSockets(io);
 
 // Health check endpoint
@@ -36,6 +36,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use(logErrors);
+app.use(boomErrorHandler);
 app.use(errorHandler);
 
 module.exports = { app, server, io };
