@@ -10,14 +10,14 @@ function validatorHandler(schema, property) {
     // req puede ser query, params, body etc...
 
     const data = req[property];
-    const { error } = schema.validate(data);
+    const { error } = schema.validate(data, { abortEarly: false });
 
     if (error) {
       // Si hay un error en la validacion, se arroja un error de bad request
-      next(boom.badRequest(error)); // Esto es para que el middleware se encarge
+      next(boom.badRequest(error.message)); // Esto es para que el middleware se encarge
+    } else {
+      next();
     }
-
-    next();
   };
 }
 
