@@ -1,89 +1,204 @@
 # GitHub Copilot Instructions - SmartFloors Backend
 
-## Contexto del Proyecto
+## Context & Architecture
 
-Este es el backend de **SmartFloors**, un sistema de monitoreo inteligente de pisos en tiempo real desarrollado para un hackathon. El proyecto simula datos de edificios, realiza predicciones con ML y detecta anomalías.
+**SmartFloors** is a real-time floor monitoring system built for a hackathon. It simulates building sensor data, generates ML predictions, and detects anomalies using WebSocket for real-time updates and REST for queries.
 
-## Stack Tecnológico
+**Key Architectural Pattern**: The system uses **singleton services** initialized in `src/sockets/index.js` that are shared across Socket.IO events and REST endpoints via exported getter functions (`getSimulator()`, `getPredictionService()`, `getAlertService()`).
 
-- **Runtime**: Node.js v16+
-- **Framework**: Express.js 4.x
-- **WebSocket**: Socket.IO 4.x
-- **Validación**: Joi 18.x
-- **Manejo de Errores**: @hapi/boom 10.x
-- **CORS**: cors 2.x
-- **Variables de Entorno**: dotenv 16.x
-- **Dev Tools**: nodemon, eslint, prettier
+**Stack**: Node.js 16+, Express 4.x, Socket.IO 4.x, Joi 18.x, @hapi/boom 10.x
 
-## Estructura del Proyecto
+## Critical Workflow: Service Initialization
 
-```
-src/
-├── app.js                      # Configuración Express + Socket.IO
-├── controllers/                # Controladores REST
-│   └── floors.controller.js
-├── middlewares/               # Middlewares personalizados
-│   ├── validator.handler.js   # Validación con Joi
-│   └── errors.handler.js      # Manejo de errores con Boom
-├── routes/                    # Definición de rutas
-│   ├── index.js
-│   ├── home.router.js
-│   └── floors.router.js       # Rutas con validaciones
-├── schemas/                   # Schemas de validación Joi
-│   └── validator.schema.js
-├── services/                  # Lógica de negocio
-│   ├── simulator.service.js   # Simulación de datos
-│   ├── prediction.service.js  # Predicciones ML
-│   └── alerts.service.js      # Detección de anomalías
-├── sockets/                   # WebSocket con Socket.IO
-│   └── index.js
-└── utils/                     # Utilidades
-    └── helpers.js
-```
-
-## Convenciones de Código
-
-### Nomenclatura
-
-- **Archivos**: `nombre.tipo.js` (ej: `floors.controller.js`, `validator.schema.js`)
-- **Variables**: camelCase (ej: `floorData`, `occupancyLevel`)
-- **Constantes**: UPPER_SNAKE_CASE (ej: `MAX_OCCUPANCY`, `DEFAULT_LIMIT`)
-- **Funciones**: camelCase descriptivo (ej: `getAllFloors`, `calculatePrediction`)
-- **Clases**: PascalCase (ej: `FloorSimulator`, `PredictionService`)
-
-### Estilo
-
-- **Idioma**: Comentarios y mensajes en español
-- **Comillas**: Simples para strings ('texto')
-- **Punto y coma**: Opcional pero consistente
-- **Indentación**: 2 espacios
-- **Línea máxima**: 100 caracteres preferentemente
-
-### Comentarios
+Services MUST be accessed via getters from `src/sockets/index.js`, never instantiated directly:
 
 ```javascript
-/**
- * Descripción detallada de la función
- * @param {Type} param - Descripción del parámetro
- * @returns {Type} - Descripción del retorno
- */
+// ✅ CORRECT - Controllers
+const { getSimulator, getPredictionService } = require('../sockets/index');
+const simulator = getSimulator(); // Singleton instance
+
+// ❌ WRONG
+const FloorSimulator = require('../services/simulator.services');
+const simulator = new FloorSimulator(); // Creates duplicate instance
 ```
 
-## Patrones de Desarrollo
+**Why**: Services maintain in-memory state (history, alerts). Multiple instances cause data inconsistency. Controllers check `if (!simulator)` and return 503 if not initialized.
 
-### 1. Controladores
+## Validation Pipeline
+
+**ALL routes must validate inputs using Joi + validatorHandler middleware**:
 
 ```javascript
-const getNombreRecurso = (req, res) => {
+// src/routes/floors.router.js pattern
+router.get(
+  '/floors/:id',
+  validatorHandler(floorParamsSchema, 'params'),      // Validate :id
+  validatorHandler(getFloorHistorySchema, 'query'),   // Validate ?limit
+  getFloorById                                         // Then controller
+);
+```
+
+The `validatorHandler` is a **closure factory** that validates `req[property]` and throws `boom.badRequest()` on failure:
+
+```javascript
+// src/middlewares/validator.handler.js
+function validatorHandler(schema, property) {
+  return function (req, res, next) {
+    const { error } = schema.validate(req[property], { abortEarly: false });
+    if (error) next(boom.badRequest(error.message));
+    else next();
+  };
+}
+```
+
+**Validation ranges** (in `src/schemas/validator.schema.js`):
+- Floor ID: 1-100 (integer)
+- History limit: 1-1440 (24 hours of minute data)
+- Prediction minutes: 10-180 (10 min to 3 hours)
+
+## Response Format Contract
+
+**All endpoints follow this structure** (controllers must maintain consistency):
+
+```javascript
+// Success (200/201)
+{
+  "success": true,
+  "data": { ... },           // Single object or array
+  "timestamp": "2025-11-11T..."
+}
+
+// Boom validation error (400) - auto-formatted
+{
+  "error": {
+    "statusCode": 400,
+    "error": "Bad Request",
+    "message": "El ID debe ser un número"  // Spanish required
+  }
+}
+
+// Service error (500) - manual in controllers
+{
+  "success": false,
+  "message": "Error al obtener recurso",
+  "error": "Details"
+}
+```
+
+## Error Handling Chain
+
+Three middleware in sequence (see `src/app.js`):
+
+```javascript
+app.use(logErrors);          // 1. Console logs
+app.use(boomErrorHandler);   // 2. Format Boom errors (isBoom check)
+app.use(errorHandler);       // 3. Catch-all for other errors
+```
+
+**Controllers must**:
+- Wrap logic in try-catch
+- Check service initialization: `if (!simulator) return res.status(503)...`
+- Use boom for HTTP errors: `boom.notFound()`, `boom.badRequest()`
+- Return consistent format (see Response Format Contract above)
+
+## Socket.IO Event Flow
+
+**Server initialization** (in `src/sockets/index.js`):
+1. Creates singleton services (simulator, prediction, alert)
+2. Starts interval timer (default 60s, configurable via `SIMULATION_INTERVAL`)
+3. On each tick: generates data → detects anomalies → emits to all clients
+
+**Key events**:
+
+```javascript
+// Server → Client (broadcast)
+io.emit('floor-data', { floors, timestamp });     // Every minute
+io.emit('new-alerts', { alerts, timestamp });     // When detected
+io.emit('predictions', { predictions });          // Every minute
+
+// Client → Server (request-response via socket)
+socket.on('request-history', (data) => {
+  // { floorId, limit } → socket.emit('history-data', ...)
+});
+socket.on('request-prediction', (data) => {
+  // { floorId, minutesAhead } → socket.emit('prediction-data', ...)
+});
+```
+
+**Connection lifecycle**:
+- On connect: client receives `initial-data` with current floor states
+- During session: receives broadcasts every minute
+- Can request historical data or predictions on-demand
+
+## In-Memory State Management
+
+**Critical**: All data is volatile (lost on restart):
+
+- **FloorSimulator** maintains:
+  - `currentData`: Array of latest floor states
+  - `history`: Array capped at 1440 entries per floor (24h * 60min)
+  
+- **AlertService** maintains:
+  - Active alerts with 24h auto-cleanup (checked hourly in socket loop)
+  
+- **No database**: This is by design for hackathon simplicity
+
+**History pruning logic** in `simulator.services.js`:
+```javascript
+// After adding to history, remove oldest entries if > 1440 per floor
+const floorHistory = this.history.filter(h => h.floorId === floor.floorId);
+if (floorHistory.length > 1440) { /* remove oldest */ }
+```
+
+## Development Commands
+
+```bash
+npm run dev        # Starts with nodemon (auto-reload)
+npm start          # Production mode
+npm run lint       # ESLint check
+npm run format     # Prettier format
+
+# Testing (bash scripts - adjust for PowerShell if needed)
+./test-validation.sh    # Validates all endpoints
+./test-mejoras.sh       # Tests enhancements
+```
+
+**Server startup sequence**:
+1. `index.js` loads env → imports `server` from `src/app.js`
+2. `src/app.js` creates Express + Socket.IO → imports routes + socket initializer
+3. `src/sockets/index.js` creates services → starts simulation interval
+4. Server listens on port (default 3000)
+
+## Code Patterns & Conventions
+
+**Naming** (strictly enforced in existing code):
+- Files: `name.type.js` (e.g., `floors.controller.js`)
+- Variables/functions: camelCase
+- Classes: PascalCase
+- **Language**: All comments, logs, and error messages in Spanish
+
+**Controller template**:
+```javascript
+const { getSimulator } = require('../sockets/index');
+
+const getResource = (req, res) => {
   try {
-    // Lógica del controlador
+    const simulator = getSimulator();
+    if (!simulator) {
+      return res.status(503).json({
+        success: false,
+        message: 'Simulador no inicializado',
+      });
+    }
+    
+    // Logic here
     res.json({
       success: true,
-      data: resultado,
+      data: result,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error en getNombreRecurso:', error);
+    console.error('Error en getResource:', error);
     res.status(500).json({
       success: false,
       message: 'Error al obtener recurso',
@@ -93,401 +208,101 @@ const getNombreRecurso = (req, res) => {
 };
 ```
 
-### 2. Rutas con Validación
-
+**Joi schema template** (always include Spanish messages):
 ```javascript
-const validatorHandler = require('../middlewares/validator.handler');
-const { schema } = require('../schemas/validator.schema');
-
-router.get(
-  '/ruta/:id',
-  validatorHandler(schema, 'params'),
-  controlador
-);
-```
-
-### 3. Schemas Joi
-
-```javascript
-const Joi = require('joi');
-
 const schema = Joi.object({
-  campo: Joi.number().integer().min(1).max(100).required().messages({
-    'number.base': 'El campo debe ser un número',
-    'number.min': 'El campo debe ser mayor o igual a 1',
-    'any.required': 'El campo es requerido',
+  id: Joi.number().integer().min(1).max(100).required().messages({
+    'number.base': 'El ID debe ser un número',
+    'number.integer': 'El ID debe ser un número entero',
+    'any.required': 'El ID es requerido',
   }),
 });
 ```
 
-### 4. Servicios (Clases)
+## Email Service (Partial Implementation)
 
-```javascript
-class NombreService {
-  constructor() {
-    this.data = [];
-  }
+`src/services/email.services.js` is a **skeleton** with TODO comments:
+- Framework is built (rate limiting, cooldowns, recipient routing)
+- Actual EmailJS integration is NOT implemented (requires `npm install @emailjs/nodejs`)
+- Methods `sendAlert()`, `sendTestEmail()`, `sendDailySummary()` are placeholders
+- See `EMAIL_SETUP.md` for full implementation guide
 
-  metodo(params) {
-    // Implementación
-    return resultado;
-  }
-}
+**If extending**: Uncomment line 18, implement TODOs, add env variables per `EMAIL_SETUP.md`
 
-module.exports = NombreService;
-```
-
-### 5. Respuestas API
-
-**Éxito:**
-```javascript
-{
-  "success": true,
-  "data": { ... },
-  "timestamp": "2025-11-11T..."
-}
-```
-
-**Error de validación (400):**
-```javascript
-{
-  "error": {
-    "statusCode": 400,
-    "error": "Bad Request",
-    "message": "Descripción del error en español"
-  }
-}
-```
-
-**Error del servidor (500):**
-```javascript
-{
-  "success": false,
-  "message": "Descripción del error",
-  "error": "Detalles técnicos"
-}
-```
-
-## Validaciones
-
-### Reglas Implementadas
-
-- **ID de piso**: Número entero entre 1 y 100
-- **Límite de historial**: Número entero entre 1 y 1440 (24 horas)
-- **Minutos de predicción**: Número entero entre 10 y 180 (3 horas)
-
-### Usar validatorHandler
-
-```javascript
-const { schema } = require('../schemas/validator.schema');
-const validatorHandler = require('../middlewares/validator.handler');
-
-// En las rutas
-router.get(
-  '/endpoint/:id',
-  validatorHandler(schema, 'params'),  // Validar params
-  validatorHandler(querySchema, 'query'),  // Validar query
-  controlador
-);
-```
-
-## Manejo de Errores
-
-### Con @hapi/boom
-
-```javascript
-const boom = require('@hapi/boom');
-
-// Error 400 - Bad Request
-throw boom.badRequest('Mensaje de error');
-
-// Error 404 - Not Found
-throw boom.notFound('Recurso no encontrado');
-
-// Error 503 - Service Unavailable
-throw boom.serverUnavailable('Servicio no disponible');
-```
-
-### Middleware de Errores
-
-Ya implementado en `src/middlewares/errors.handler.js`:
-- `logErrors` - Registra errores
-- `boomErrorHandler` - Maneja errores de Boom
-- `errorHandler` - Maneja otros errores
-
-## Socket.IO
-
-### Eventos del Servidor → Cliente
-
-- `initial-data` - Datos iniciales al conectar
-- `floor-data` - Datos en tiempo real (cada minuto)
-- `predictions` - Predicciones generadas
-- `new-alerts` - Nuevas alertas detectadas
-- `history-data` - Datos históricos solicitados
-- `alerts-data` - Alertas solicitadas
-
-### Eventos Cliente → Servidor
-
-- `request-history` - Solicitar historial: `{ floorId, limit }`
-- `request-prediction` - Solicitar predicción: `{ floorId, minutesAhead }`
-- `request-alerts` - Solicitar alertas
-
-### Implementación
-
-```javascript
-socket.on('evento', (data) => {
-  // Procesar solicitud
-  socket.emit('respuesta', resultado);
-});
-
-// Para todos los clientes
-io.emit('evento', datos);
-```
-
-## Datos Simulados
-
-### Métricas por Piso
-
-- **buildingId**: ID del edificio (número)
-- **buildingName**: Nombre del edificio (configurable en .env)
-- **floorId**: ID del piso (1-N)
-- **occupancy**: 0-100 (número de personas)
-- **temperature**: 18-30°C (temperatura ambiente)
-- **humidity**: 30-70% (humedad relativa)
-- **powerConsumption**: kWh calculado según ocupación y temperatura
-
-### Patrones Horarios
-
-- 09:00-12:00: Alta ocupación (60-90 personas)
-- 13:00-14:00: Ocupación media (30-50 personas)
-- 15:00-18:00: Ocupación media-alta (50-80 personas)
-- 19:00-06:00: Baja ocupación (5-20 personas)
-
-## Predicciones
-
-### Algoritmos Usados
-
-1. **Promedio Móvil**: Últimas 10 observaciones
-2. **Regresión Lineal Simple**: Tendencia histórica
-3. **Método Híbrido**: Promedio ponderado de ambos (60% MA + 40% LR)
-
-### Métricas Predichas
-
-- ✅ Ocupación futura
-- ✅ Temperatura
-- ✅ Humedad
-- ✅ Consumo energético
-
-### Generar Predicciones
-
-```javascript
-const predictionService = new PredictionService();
-const predictions = predictionService.predictFloor(history, 60);
-```
-
-## Alertas
-
-### Niveles de Severidad
-
-- **critical**: Requiere acción inmediata
-- **warning**: Requiere atención
-- **info**: Información relevante
-
-### Tipos de Anomalías
-
-- Ocupación alta/crítica
-- Temperatura extrema
-- Humedad anormal
-- Consumo energético elevado
-- Cambios bruscos
-
-### Generar Alertas
-
-```javascript
-const alertService = new AlertService();
-const alert = alertService.generateAlert(floorId, currentData, history);
-```
-
-## Variables de Entorno
+## Key Environment Variables
 
 ```env
-PORT=3000                    # Puerto del servidor
-NODE_ENV=development         # Ambiente
-CORS_ORIGIN=http://...       # URL frontend
-SIMULATION_INTERVAL=60000    # Intervalo simulación (ms)
-NUMBER_OF_FLOORS=5          # Número de pisos
-BUILDING_NAME=Edificio Principal  # Nombre del edificio
+PORT=3000                          # Server port
+NODE_ENV=development               # Environment
+CORS_ORIGIN=http://localhost:5173  # Frontend URL
+SIMULATION_INTERVAL=60000          # Data gen interval (ms)
+NUMBER_OF_FLOORS=5                 # Floor count
+BUILDING_NAME=Edificio Principal   # Building name
+
+# Email (optional - see EMAIL_SETUP.md)
+EMAIL_NOTIFICATIONS_ENABLED=false  # Set true after setup
+EMAILJS_SERVICE_ID=                # From EmailJS dashboard
+EMAILJS_PUBLIC_KEY=                # From EmailJS dashboard
+EMAILJS_PRIVATE_KEY=               # From EmailJS dashboard
 ```
 
-## Testing
+## API Endpoints
 
-### Postman
+```
+GET  /health                           # Health check
+GET  /api/v1/floors                    # All current floor data
+GET  /api/v1/floors/stats              # Building statistics
+GET  /api/v1/floors/:id                # Single floor (id: 1-100)
+GET  /api/v1/floors/:id/history        # History (query: limit 1-1440)
+GET  /api/v1/floors/:id/predictions    # Predictions (query: minutesAhead 10-180)
+GET  /api/v1/alerts                    # All active alerts
 
-- Colección completa en `SmartFloors.postman_collection.json`
-- 13 requests con tests automáticos
-- Variables configuradas
+# Email endpoints (if implemented)
+GET  /api/v1/email/status              # Email service status
+POST /api/v1/email/test                # Send test email
+POST /api/v1/email/alert               # Send alert email
+```
 
-### cURL
+## Common Pitfalls
 
+1. **Don't instantiate services directly** - Always use getters from `src/sockets/index.js`
+2. **Don't forget validation** - Every route needs `validatorHandler` middleware
+3. **Check service initialization** - Controllers must handle null services (503 response)
+4. **Respect validation ranges** - ID 1-100, history 1-1440, predictions 10-180
+5. **Use Spanish** - All user-facing text must be in Spanish
+6. **Consistent responses** - Always include `success`, `data`, `timestamp` fields
+
+## Testing Strategy
+
+**Postman collection**: `postman/SmartFloors.postman_collection.json` (13 requests with automated tests)
+
+**Quick smoke test**:
 ```bash
-# Obtener pisos
-curl http://localhost:3000/api/v1/floors
-
-# Con parámetros
-curl "http://localhost:3000/api/v1/floors/1/history?limit=60"
-```
-
-## Documentación
-
-### Archivos Disponibles
-
-- `README.md` - Documentación principal
-- `INSTALLATION.md` - Guía de instalación
-- `VALIDATION.md` - Documentación de validaciones
-- `POSTMAN_GUIDE.md` - Guía de Postman
-- `QUICK_START.md` - Inicio rápido
-- `DOCUMENTATION_INDEX.md` - Índice completo
-
-## Buenas Prácticas
-
-### 1. Siempre validar inputs
-
-```javascript
-// ✅ Correcto
-router.get('/:id', validatorHandler(schema, 'params'), controller);
-
-// ❌ Incorrecto
-router.get('/:id', controller); // Sin validación
-```
-
-### 2. Usar try-catch en controladores
-
-```javascript
-// ✅ Correcto
-const getFloor = (req, res) => {
-  try {
-    // Lógica
-  } catch (error) {
-    // Manejo de error
-  }
-};
-```
-
-### 3. Mensajes de error en español
-
-```javascript
-// ✅ Correcto
-.messages({
-  'number.base': 'El ID debe ser un número',
-})
-
-// ❌ Incorrecto
-.messages({
-  'number.base': 'ID must be a number',
-})
-```
-
-### 4. Respuestas consistentes
-
-```javascript
-// ✅ Correcto
-res.json({
-  success: true,
-  data: resultado,
-  timestamp: new Date().toISOString(),
-});
-
-// ❌ Incorrecto
-res.json(resultado); // Sin estructura
-```
-
-### 5. Logs descriptivos
-
-```javascript
-// ✅ Correcto
-console.log(`📊 Datos generados | Alertas: ${alerts.length}`);
-
-// ❌ Incorrecto
-console.log(data); // Sin contexto
-```
-
-## Endpoints API
-
-### Pisos
-
-- `GET /api/v1/floors` - Todos los pisos
-- `GET /api/v1/floors/stats` - Estadísticas
-- `GET /api/v1/floors/:id` - Piso específico (validar id: 1-100)
-- `GET /api/v1/floors/:id/history` - Historial (validar limit: 1-1440)
-- `GET /api/v1/floors/:id/predictions` - Predicciones (validar minutesAhead: 10-180)
-
-### Alertas
-
-- `GET /api/v1/alerts` - Todas las alertas
-
-### Health
-
-- `GET /health` - Health check
-
-## Comandos Útiles
-
-```bash
-# Desarrollo
+# Start server
 npm run dev
 
-# Producción
-npm start
-
-# Linting
-npm run lint
-
-# Formatear
-npm run format
-
-# Tests de validación
-./test-validation.sh
+# In another terminal
+curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/floors
 ```
 
-## Notas Importantes
+**WebSocket testing**: Use Socket.IO client or browser dev tools. Connect to `ws://localhost:3000` and listen for `floor-data` events.
 
-1. **Los datos no persisten** - Todo en memoria, se pierde al reiniciar
-2. **Historial limitado** - Últimas 24 horas (1440 registros) por piso
-3. **Alertas auto-limpieza** - Se eliminan después de 24 horas
-4. **Intervalo configurable** - Modificar SIMULATION_INTERVAL en .env
-5. **Todos los mensajes en español** - Errores, logs, respuestas
+## When Adding Features
 
-## Al Generar Código
+1. **New endpoint**: Add route → schema → validator → controller → update Postman collection
+2. **New service**: Create in `services/` → initialize in `src/sockets/index.js` → export getter
+3. **New validation**: Define in `schemas/validator.schema.js` → apply in route
+4. **New socket event**: Add listener in `src/sockets/index.js` → document in README
 
-### ✅ Hacer
+## Documentation References
 
-- Usar las convenciones establecidas
-- Agregar validaciones con Joi
-- Incluir manejo de errores con try-catch
-- Usar boom para errores HTTP
-- Comentarios en español
-- Respuestas con formato consistente
-- Logs descriptivos con emojis
-
-### ❌ Evitar
-
-- Código sin validación
-- Mensajes en inglés
-- Respuestas sin estructura
-- Código sin try-catch
-- Variables en inglés cuando hay equivalente en español
-- Código sin comentarios
-
-## Extensiones Futuras
-
-Si se solicita agregar funcionalidades, considerar:
-
-- Usar la estructura existente de services/
-- Agregar validaciones apropiadas
-- Mantener el formato de respuestas
-- Actualizar la documentación correspondiente
-- Agregar tests en la colección de Postman
-- Seguir los patrones establecidos
+- `README.md` - Full project overview
+- `INSTALLATION.md` - Setup guide
+- `EMAIL_SETUP.md` - EmailJS implementation (incomplete feature)
+- `POSTMAN_GUIDE.md` - API testing guide
+- `QUICK_START.md` - Quick reference
 
 ---
 
-**Recuerda**: Este es un proyecto de hackathon enfocado en demostración. Priorizar funcionalidad clara y código legible sobre optimización prematura.
+**Project Philosophy**: This is a hackathon demo prioritizing clarity and functionality over optimization. Code should be self-documenting, errors explicit (Spanish), and patterns consistent.
