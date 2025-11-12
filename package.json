@@ -18,6 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
     "@hapi/boom": "^10.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -31,5 +32,14 @@
     "eslint-plugin-prettier": "^5.0.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.0.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kevinparra535/hackaton.smartfloors.backend.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Kevinparra535/hackaton.smartfloors.backend/issues"
+  },
+  "homepage": "https://github.com/Kevinparra535/hackaton.smartfloors.backend#readme"
 }

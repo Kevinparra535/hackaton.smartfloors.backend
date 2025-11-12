@@ -63,8 +63,6 @@ const getEmailStatus = (req, res) => {
  * POST /api/v1/email/test
  * Envía un email de prueba
  * Body: { email: "test@example.com" }
- *
- * TODO: IMPLEMENTAR LÓGICA DE ENVÍO
  */
 const sendTestEmail = async (req, res) => {
   try {
@@ -88,14 +86,8 @@ const sendTestEmail = async (req, res) => {
 
     const service = getEmailService();
 
-    // TODO: Descomentar cuando se implemente el método sendTestEmail
-    // const result = await service.sendTestEmail(email);
-
-    // Placeholder temporal
-    const result = {
-      sent: false,
-      reason: 'Método sendTestEmail() no implementado. Ver TODO en email.services.js',
-    };
+    // ✅ IMPLEMENTADO - Enviar email de prueba
+    const result = await service.sendTestEmail(email);
 
     if (result.sent) {
       res.json({
@@ -127,8 +119,6 @@ const sendTestEmail = async (req, res) => {
  * POST /api/v1/email/alert
  * Envía una alerta por email manualmente
  * Body: { alert: {...} } (objeto de alerta completo)
- *
- * TODO: IMPLEMENTAR LÓGICA DE ENVÍO
  */
 const sendAlertEmail = async (req, res) => {
   try {
@@ -151,14 +141,8 @@ const sendAlertEmail = async (req, res) => {
 
     const service = getEmailService();
 
-    // TODO: Descomentar cuando se implemente el método sendAlert
-    // const result = await service.sendAlert(alert);
-
-    // Placeholder temporal
-    const result = {
-      sent: false,
-      reason: 'Método sendAlert() no implementado. Ver TODO en email.services.js',
-    };
+    // ✅ IMPLEMENTADO - Enviar alerta
+    const result = await service.sendAlert(alert);
 
     if (result.sent) {
       res.json({
@@ -190,8 +174,6 @@ const sendAlertEmail = async (req, res) => {
  * POST /api/v1/email/summary
  * Envía resumen diario de alertas
  * Body: { summary: {...} }
- *
- * TODO: IMPLEMENTAR LÓGICA DE ENVÍO
  */
 const sendDailySummary = async (req, res) => {
   try {
@@ -206,14 +188,8 @@ const sendDailySummary = async (req, res) => {
 
     const service = getEmailService();
 
-    // TODO: Descomentar cuando se implemente el método sendDailySummary
-    // const result = await service.sendDailySummary(summary);
-
-    // Placeholder temporal
-    const result = {
-      sent: false,
-      reason: 'Método sendDailySummary() no implementado. Ver TODO en email.services.js',
-    };
+    // ✅ IMPLEMENTADO - Enviar resumen diario
+    const result = await service.sendDailySummary(summary);
 
     if (result.sent) {
       res.json({

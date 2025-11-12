@@ -25,6 +25,12 @@ app.use(express.json());
 const routerApi = require('./routes/index');
 routerApi(app);
 
+// Importar rutas SERVICIO DE EMAIL
+const emailRouter = require('./routes/email.router');
+
+// Registrar rutas
+app.use('/api/v1/email', emailRouter);
+
 // Socket.IO initialization
 const initializeSockets = require('./sockets/index');
 const { errorHandler, logErrors, boomErrorHandler } = require('./middlewares/errors.handler');
