@@ -2,7 +2,7 @@
   "info": {
     "name": "SmartFloors Backend API",
     "_postman_id": "smartfloors-api-2025",
-    "description": "Colección completa de endpoints para el backend de SmartFloors\n\n## Características\n- Monitoreo en tiempo real de pisos\n- Predicciones con ML\n- Detección de anomalías\n- Alertas inteligentes\n\n## Variables\n- `base_url`: http://localhost:3000\n- `api_version`: v1\n\n## Autor\nSmartFloors Team - Hackathon 2025",
+    "description": "Colección completa de endpoints para el backend de SmartFloors\n\n## Características\n- Monitoreo en tiempo real de pisos\n- Predicciones con ML (Moving Average + Linear Regression)\n- Detección de anomalías y alertas inteligentes\n- Alertas preventivas basadas en predicciones futuras\n- Exportación de alertas e historial a CSV\n\n## Funcionalidades\n### Monitoreo\n- Datos actuales de temperatura, humedad, ocupación y energía\n- Estadísticas generales del edificio\n- Historial de hasta 24 horas (1440 registros)\n\n### Predicciones\n- Predicciones de 10 a 180 minutos en el futuro\n- 6 puntos de predicción cada 10 minutos\n- Algoritmo híbrido: 60% MA + 40% LR\n\n### Alertas\n- Detección de anomalías en tiempo real\n- 10 tipos de alertas (6 actuales + 4 predictivas)\n- Sobrecarga térmica (temperatura + energía)\n- Alertas preventivas antes de que ocurran problemas\n\n### Exportación CSV\n- Exportar alertas con múltiples filtros\n- Exportar historial de datos del simulador\n- Filtros: fecha, severidad, piso, tipo, predictivas\n- Compatible con Excel (UTF-8 BOM)\n\n## Variables\n- `base_url`: http://localhost:3000\n- `api_version`: v1\n\n## Endpoints Totales: 23\n- Health Check: 1\n- Pisos: 5\n- Alertas: 6\n- Exportación CSV: 10\n- Validaciones: 13\n\n## Autor\nSmartFloors Team - Hackathon 2025",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -558,6 +558,407 @@
       "description": "Endpoints para gestión de alertas y anomalías con capacidades de filtrado"
     },
     {
+      "name": "Exportación CSV",
+      "item": [
+        {
+          "name": "Get Export Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has alerts statistics\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('alerts');",
+                  "    pm.expect(jsonData.data.alerts).to.have.property('total');",
+                  "    pm.expect(jsonData.data.alerts).to.have.property('byType');",
+                  "    pm.expect(jsonData.data.alerts).to.have.property('bySeverity');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has history statistics\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('history');",
+                  "    pm.expect(jsonData.data.history).to.have.property('total');",
+                  "    pm.expect(jsonData.data.history).to.have.property('byFloor');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "stats"]
+            },
+            "description": "Obtiene estadísticas de datos disponibles para exportar (alertas e historial)"
+          },
+          "response": []
+        },
+        {
+          "name": "Export All Alerts to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is CSV format\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "});",
+                  "",
+                  "pm.test(\"CSV has headers\", function () {",
+                  "    var csvData = pm.response.text();",
+                  "    pm.expect(csvData).to.include('timestamp');",
+                  "    pm.expect(csvData).to.include('floorId');",
+                  "    pm.expect(csvData).to.include('severity');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"]
+            },
+            "description": "Exporta todas las alertas activas a formato CSV. El archivo se descarga automáticamente."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Critical Alerts to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Response is CSV format\", function () {",
+                  "        pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?severity=critical",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "critical",
+                  "description": "Filtrar solo alertas críticas"
+                }
+              ]
+            },
+            "description": "Exporta solo las alertas de severidad crítica a CSV"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Alerts by Floor to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?floorId=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "floorId",
+                  "value": "1",
+                  "description": "Filtrar alertas del piso 1"
+                }
+              ]
+            },
+            "description": "Exporta alertas de un piso específico a CSV"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Predictive Alerts to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"CSV contains predictive alerts\", function () {",
+                  "        var csvData = pm.response.text();",
+                  "        pm.expect(csvData).to.include('Si');",
+                  "        pm.expect(csvData).to.include('minutesAhead');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?isPredictive=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "isPredictive",
+                  "value": "true",
+                  "description": "Filtrar solo alertas preventivas/predictivas"
+                }
+              ]
+            },
+            "description": "Exporta solo las alertas preventivas (basadas en predicciones) a CSV"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Thermal Overload Alerts to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?type=thermal_overload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "thermal_overload",
+                  "description": "Filtrar alertas de sobrecarga térmica"
+                }
+              ]
+            },
+            "description": "Exporta alertas de sobrecarga térmica a CSV"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Alerts with Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?startDate=2025-11-12T00:00:00Z&endDate=2025-11-12T23:59:59Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-11-12T00:00:00Z",
+                  "description": "Fecha de inicio (ISO 8601)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-11-12T23:59:59Z",
+                  "description": "Fecha de fin (ISO 8601)"
+                }
+              ]
+            },
+            "description": "Exporta alertas dentro de un rango de fechas específico"
+          },
+          "response": []
+        },
+        {
+          "name": "Export All History to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is CSV format\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "});",
+                  "",
+                  "pm.test(\"CSV has history headers\", function () {",
+                  "    var csvData = pm.response.text();",
+                  "    pm.expect(csvData).to.include('temperature');",
+                  "    pm.expect(csvData).to.include('humidity');",
+                  "    pm.expect(csvData).to.include('occupancy');",
+                  "    pm.expect(csvData).to.include('powerConsumption');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/history/csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "history", "csv"]
+            },
+            "description": "Exporta todo el historial de datos del simulador a CSV (temperatura, humedad, ocupación, energía)"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Floor History to CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"CSV contains only floor 1 data\", function () {",
+                  "    var csvData = pm.response.text();",
+                  "    var lines = csvData.split('\\n');",
+                  "    // Skip header line",
+                  "    for (var i = 1; i < lines.length && i < 10; i++) {",
+                  "        if (lines[i].trim()) {",
+                  "            var columns = lines[i].split(',');",
+                  "            if (columns.length > 1) {",
+                  "                pm.expect(columns[1]).to.include('1');",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/history/csv?floorId=1&limit=100",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "history", "csv"],
+              "query": [
+                {
+                  "key": "floorId",
+                  "value": "1",
+                  "description": "Piso específico"
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "description": "Límite de registros (1-10000)"
+                }
+              ]
+            },
+            "description": "Exporta el historial de un piso específico con límite de registros"
+          },
+          "response": []
+        },
+        {
+          "name": "Export History with Date Filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/history/csv?startDate=2025-11-12T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "history", "csv"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-11-12T00:00:00Z",
+                  "description": "Fecha de inicio para filtrar historial"
+                }
+              ]
+            },
+            "description": "Exporta historial filtrado por fecha de inicio"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para exportar alertas e historial a formato CSV con múltiples opciones de filtrado"
+    },
+    {
       "name": "Validaciones (Errores esperados)",
       "item": [
         {
@@ -919,6 +1320,124 @@
               ]
             },
             "description": "Prueba validación: floorId en filtro debe ser 1-100"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Export Date Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions date format\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"fecha\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?startDate=invalid-date",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "invalid-date"
+                }
+              ]
+            },
+            "description": "Prueba validación: startDate debe ser formato ISO 8601"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Export History Limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions limit\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"10000\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/history/csv?limit=20000",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "history", "csv"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20000"
+                }
+              ]
+            },
+            "description": "Prueba validación: limit de historial debe ser <= 10000"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Export EndDate Before StartDate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions date range\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"posterior\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/export/alerts/csv?startDate=2025-11-12T23:00:00Z&endDate=2025-11-12T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "export", "alerts", "csv"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-11-12T23:00:00Z"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-11-12T00:00:00Z"
+                }
+              ]
+            },
+            "description": "Prueba validación: endDate debe ser posterior a startDate"
           },
           "response": []
         }
