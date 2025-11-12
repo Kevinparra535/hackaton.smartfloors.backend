@@ -107,7 +107,7 @@ function generateAndEmitData(io) {
   // Generar nuevos datos
   const newData = simulator.generateData();
 
-  // Detectar anomalías y generar alertas
+  // Detectar anomalías y generar alertas actuales
   const alerts = [];
   newData.forEach((floorData) => {
     const history = simulator.getFloorHistory(floorData.floorId, 10);
@@ -127,16 +127,35 @@ function generateAndEmitData(io) {
     };
   });
 
+  // Generar alertas preventivas basadas en predicciones
+  const predictiveAlerts = [];
+  predictions.forEach((predData) => {
+    const floorData = newData.find((f) => f.floorId === predData.floorId);
+    if (floorData) {
+      const predictiveAlert = alertService.generatePredictiveAlert(
+        predData.floorId,
+        floorData.name,
+        predData.predictions,
+        floorData.powerConsumption,
+      );
+
+      if (predictiveAlert) {
+        predictiveAlerts.push(predictiveAlert);
+      }
+    }
+  });
+
   // Emitir datos a todos los clientes conectados
   io.emit('floor-data', {
     floors: newData,
     timestamp: new Date().toISOString(),
   });
 
-  // Emitir alertas si hay
-  if (alerts.length > 0) {
+  // Emitir alertas si hay (actuales + preventivas)
+  const allAlerts = [...alerts, ...predictiveAlerts];
+  if (allAlerts.length > 0) {
     io.emit('new-alerts', {
-      alerts,
+      alerts: allAlerts,
       timestamp: new Date().toISOString(),
     });
   }
@@ -147,7 +166,10 @@ function generateAndEmitData(io) {
     timestamp: new Date().toISOString(),
   });
 
-  console.log(`📊 Datos generados y emitidos | Alertas: ${alerts.length}`);
+  const alertSummary = alerts.length > 0 || predictiveAlerts.length > 0
+    ? `Actuales: ${alerts.length}, Preventivas: ${predictiveAlerts.length}`
+    : '0';
+  console.log(`📊 Datos generados y emitidos | Alertas: ${alertSummary}`);
 
   // Limpiar alertas antiguas cada hora
   const now = new Date();

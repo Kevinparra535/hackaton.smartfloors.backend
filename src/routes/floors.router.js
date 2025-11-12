@@ -20,6 +20,7 @@ const {
   getFloorHistorySchema,
   getFloorPredictionsSchema,
 } = require('../schemas/validator.schema');
+const { getAlertsFiltersSchema } = require('../schemas/alerts.schema');
 
 // GET /api/v1/floors - Obtener todos los pisos
 router.get('/floors', getAllFloors);
@@ -50,7 +51,8 @@ router.get(
   getFloorPredictions
 );
 
-// GET /api/v1/alerts - Obtener todas las alertas
-router.get('/alerts', getAllAlerts);
+// GET /api/v1/alerts - Obtener todas las alertas con filtros opcionales
+// Filtros: ?severity=critical&floorId=3&type=temperature&limit=10
+router.get('/alerts', validatorHandler(getAlertsFiltersSchema, 'query'), getAllAlerts);
 
 module.exports = router;

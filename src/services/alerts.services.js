@@ -12,15 +12,23 @@ class AlertService {
 				veryHigh: 95,
 				low: 5,
 			},
+			// Temperatura en °C
+			// Informativa: 26-27.9, Media: 28-29.4, Crítica: ≥29.5
 			temperature: {
-				high: 25,
-				veryHigh: 27,
-				low: 18,
+				info: 26,        // Nivel informativo: 26-27.9°C
+				warning: 28,     // Nivel medio: 28-29.4°C
+				critical: 29.5,  // Nivel crítico: ≥29.5°C
+				low: 18,         // Temperatura baja
 			},
+			// Humedad relativa en %
+			// Informativa: <25 o >70, Media: <22 o >75, Crítica: <20 o >80
 			humidity: {
-				high: 65,
-				veryHigh: 70,
-				low: 30,
+				high_info: 70,      // Nivel informativo alto: >70%
+				high_warning: 75,   // Nivel medio alto: >75%
+				high_critical: 80,  // Nivel crítico alto: >80%
+				low_info: 25,       // Nivel informativo bajo: <25%
+				low_warning: 22,    // Nivel medio bajo: <22%
+				low_critical: 20,   // Nivel crítico bajo: <20%
 			},
 			powerConsumption: {
 				high: 150,
@@ -83,8 +91,6 @@ class AlertService {
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkOccupancy(occupancy, history, floorId = 0) {
-		const hour = new Date().getHours();
-
 		// Ocupación muy alta
 		if (occupancy >= this.thresholds.occupancy.veryHigh) {
 			const targetFloor = floorId > 1 ? floorId - 1 : floorId + 1;
@@ -136,25 +142,28 @@ class AlertService {
 
 	/**
 	 * Verifica anomalías en temperatura
+	 * Umbrales: Informativa 26-27.9°C, Media 28-29.4°C, Crítica ≥29.5°C
 	 * @param {Number} temperature - Temperatura actual
 	 * @param {Number} occupancy - Ocupación actual
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkTemperature(temperature, occupancy, floorId = 0) {
-		if (temperature >= this.thresholds.temperature.veryHigh) {
-			const targetTemp = Math.max(22, temperature - 3);
+		// Crítica: ≥29.5°C
+		if (temperature >= this.thresholds.temperature.critical) {
+			const targetTemp = Math.max(22, temperature - 4);
 			return {
 				type: 'temperature',
 				severity: 'critical',
 				metric: 'Temperatura',
 				value: temperature,
-				message: `Temperatura muy alta: ${temperature}°C`,
-				recommendation: `Ajustar setpoint del Piso ${floorId} a ${targetTemp}°C de inmediato. Activar aire acondicionado al máximo y reducir ocupación si es posible.`,
+				message: `Temperatura crítica: ${temperature}°C`,
+				recommendation: `CRÍTICO: Ajustar setpoint del Piso ${floorId} a ${targetTemp}°C de inmediato. Activar aire acondicionado al máximo y reducir ocupación si es posible.`,
 				timestamp: new Date().toISOString(),
 			};
 		}
 
-		if (temperature >= this.thresholds.temperature.high) {
+		// Media: 28-29.4°C
+		if (temperature >= this.thresholds.temperature.warning) {
 			const targetTemp = 24;
 			return {
 				type: 'temperature',
@@ -167,6 +176,20 @@ class AlertService {
 			};
 		}
 
+		// Informativa: 26-27.9°C
+		if (temperature >= this.thresholds.temperature.info) {
+			return {
+				type: 'temperature',
+				severity: 'info',
+				metric: 'Temperatura',
+				value: temperature,
+				message: `Temperatura por encima del rango óptimo: ${temperature}°C`,
+				recommendation: `Monitorear temperatura en Piso ${floorId}. Considerar ajustar setpoint a 24°C en los próximos 20 min si continúa aumentando.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Temperatura baja
 		if (temperature <= this.thresholds.temperature.low) {
 			const targetTemp = 21;
 			return {
@@ -198,23 +221,26 @@ class AlertService {
 
 	/**
 	 * Verifica anomalías en humedad
+	 * Umbrales: Informativa (<25 o >70), Media (<22 o >75), Crítica (<20 o >80)
 	 * @param {Number} humidity - Humedad actual
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkHumidity(humidity, floorId = 0) {
-		if (humidity >= this.thresholds.humidity.veryHigh) {
+		// Crítica alta: >80%
+		if (humidity > this.thresholds.humidity.high_critical) {
 			return {
 				type: 'humidity',
 				severity: 'critical',
 				metric: 'Humedad',
 				value: humidity,
-				message: `Humedad muy alta: ${humidity}%`,
-				recommendation: `Activar deshumidificadores en Piso ${floorId} de inmediato. Incrementar ventilación; revisar puertas/celosías. Alta humedad puede afectar confort y equipos.`,
+				message: `Humedad crítica: ${humidity}%`,
+				recommendation: `CRÍTICO: Activar deshumidificadores en Piso ${floorId} de inmediato. Incrementar ventilación al máximo; revisar puertas/celosías. Alta humedad puede afectar confort y equipos.`,
 				timestamp: new Date().toISOString(),
 			};
 		}
 
-		if (humidity >= this.thresholds.humidity.high) {
+		// Media alta: >75%
+		if (humidity > this.thresholds.humidity.high_warning) {
 			return {
 				type: 'humidity',
 				severity: 'warning',
@@ -226,7 +252,34 @@ class AlertService {
 			};
 		}
 
-		if (humidity <= this.thresholds.humidity.low) {
+		// Informativa alta: >70%
+		if (humidity > this.thresholds.humidity.high_info) {
+			return {
+				type: 'humidity',
+				severity: 'info',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad por encima del rango óptimo: ${humidity}%`,
+				recommendation: `Monitorear humedad en Piso ${floorId}. Considerar activar deshumidificación si continúa aumentando en los próximos 30 min.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Crítica baja: <20%
+		if (humidity < this.thresholds.humidity.low_critical) {
+			return {
+				type: 'humidity',
+				severity: 'critical',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad crítica baja: ${humidity}%`,
+				recommendation: `CRÍTICO: Activar humidificadores en Piso ${floorId} de inmediato. Ambiente extremadamente seco puede afectar salud y confort.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Media baja: <22%
+		if (humidity < this.thresholds.humidity.low_warning) {
 			return {
 				type: 'humidity',
 				severity: 'warning',
@@ -234,6 +287,19 @@ class AlertService {
 				value: humidity,
 				message: `Humedad baja: ${humidity}%`,
 				recommendation: `Activar humidificadores en Piso ${floorId}. Ambiente muy seco puede afectar salud y confort.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Informativa baja: <25%
+		if (humidity < this.thresholds.humidity.low_info) {
+			return {
+				type: 'humidity',
+				severity: 'info',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad por debajo del rango óptimo: ${humidity}%`,
+				recommendation: `Monitorear humedad en Piso ${floorId}. Considerar activar humidificación si continúa disminuyendo.`,
 				timestamp: new Date().toISOString(),
 			};
 		}
@@ -457,6 +523,189 @@ class AlertService {
 		this.alerts = this.alerts.filter((alert) => {
 			return new Date(alert.timestamp).getTime() > oneDayAgo;
 		});
+	}
+
+	/**
+	 * Genera alertas preventivas basadas en predicciones
+	 * @param {Number} floorId - ID del piso
+	 * @param {String} floorName - Nombre del piso
+	 * @param {Object} predictions - Predicciones generadas por PredictionService
+	 * @param {Number} currentPower - Consumo energético actual
+	 * @returns {Object|null} Alerta preventiva o null
+	 */
+	generatePredictiveAlert(floorId, floorName, predictions, currentPower = 0) {
+		const preventiveAnomalies = [];
+
+		// Verificar predicciones de temperatura
+		if (predictions.temperature && predictions.temperature.predictions) {
+			predictions.temperature.predictions.forEach((pred) => {
+				// Crítica: ≥29.5°C
+				if (pred.temperature >= this.thresholds.temperature.critical) {
+					preventiveAnomalies.push({
+						type: 'predictive_temperature',
+						severity: 'critical',
+						metric: 'Predicción de Temperatura',
+						value: pred.temperature,
+						minutesAhead: pred.minutesAhead,
+						message: `ALERTA PREVENTIVA: Se predice temperatura crítica de ${pred.temperature}°C en ${pred.minutesAhead} minutos`,
+						recommendation: `ACCIÓN PREVENTIVA: Ajustar setpoint del Piso ${floorId} a 22°C de inmediato. Activar enfriamiento preventivo antes de que se alcance temperatura crítica.`,
+						timestamp: new Date().toISOString(),
+						predictedTime: pred.timestamp,
+					});
+					return; // Solo una alerta por métrica
+				}
+				// Warning: ≥28°C
+				else if (pred.temperature >= this.thresholds.temperature.warning) {
+					preventiveAnomalies.push({
+						type: 'predictive_temperature',
+						severity: 'warning',
+						metric: 'Predicción de Temperatura',
+						value: pred.temperature,
+						minutesAhead: pred.minutesAhead,
+						message: `Alerta preventiva: Se predice temperatura elevada de ${pred.temperature}°C en ${pred.minutesAhead} minutos`,
+						recommendation: `Preparar ajuste de climatización en Piso ${floorId}. Considerar reducir setpoint a 23°C en los próximos ${Math.max(10, pred.minutesAhead - 10)} minutos.`,
+						timestamp: new Date().toISOString(),
+						predictedTime: pred.timestamp,
+					});
+					return;
+				}
+			});
+		}
+
+		// Verificar predicciones de humedad
+		if (predictions.humidity && predictions.humidity.predictions) {
+			predictions.humidity.predictions.forEach((pred) => {
+				// Crítica alta: >80%
+				if (pred.humidity > this.thresholds.humidity.high_critical) {
+					preventiveAnomalies.push({
+						type: 'predictive_humidity',
+						severity: 'critical',
+						metric: 'Predicción de Humedad',
+						value: pred.humidity,
+						minutesAhead: pred.minutesAhead,
+						message: `ALERTA PREVENTIVA: Se predice humedad crítica de ${pred.humidity}% en ${pred.minutesAhead} minutos`,
+						recommendation: `ACCIÓN PREVENTIVA: Activar deshumidificadores en Piso ${floorId} ahora. Incrementar ventilación de forma preventiva.`,
+						timestamp: new Date().toISOString(),
+						predictedTime: pred.timestamp,
+					});
+					return;
+				}
+				// Crítica baja: <20%
+				else if (pred.humidity < this.thresholds.humidity.low_critical) {
+					preventiveAnomalies.push({
+						type: 'predictive_humidity',
+						severity: 'critical',
+						metric: 'Predicción de Humedad',
+						value: pred.humidity,
+						minutesAhead: pred.minutesAhead,
+						message: `ALERTA PREVENTIVA: Se predice humedad crítica baja de ${pred.humidity}% en ${pred.minutesAhead} minutos`,
+						recommendation: `ACCIÓN PREVENTIVA: Activar humidificadores en Piso ${floorId} ahora. Preparar sistemas para evitar ambiente extremadamente seco.`,
+						timestamp: new Date().toISOString(),
+						predictedTime: pred.timestamp,
+					});
+					return;
+				}
+			});
+		}
+
+		// Verificar predicciones de energía
+		if (predictions.powerConsumption && predictions.powerConsumption.predictions) {
+			predictions.powerConsumption.predictions.forEach((pred) => {
+				// Consumo muy alto: ≥200 kWh
+				if (pred.powerConsumption >= this.thresholds.powerConsumption.veryHigh) {
+					preventiveAnomalies.push({
+						type: 'predictive_power',
+						severity: 'critical',
+						metric: 'Predicción de Consumo Energético',
+						value: pred.powerConsumption,
+						minutesAhead: pred.minutesAhead,
+						message: `ALERTA PREVENTIVA: Se predice consumo crítico de ${pred.powerConsumption} kWh en ${pred.minutesAhead} minutos`,
+						recommendation: `ACCIÓN PREVENTIVA: Redistribuir carga eléctrica del Piso ${floorId} ahora. Apagar equipos no esenciales antes de alcanzar sobrecarga.`,
+						timestamp: new Date().toISOString(),
+						predictedTime: pred.timestamp,
+					});
+					return;
+				}
+			});
+		}
+
+		// Detectar riesgo de sobrecarga térmica predictiva
+		const thermalRisk = this.checkPredictiveThermalRisk(
+			floorId,
+			predictions.temperature,
+			predictions.powerConsumption,
+			currentPower,
+		);
+		if (thermalRisk) {
+			preventiveAnomalies.push(thermalRisk);
+		}
+
+		// Si hay anomalías preventivas, generar alerta
+		if (preventiveAnomalies.length === 0) return null;
+
+		const alert = {
+			floorId,
+			floorName,
+			anomalies: preventiveAnomalies,
+			timestamp: new Date().toISOString(),
+			severity: this.getHighestSeverity(preventiveAnomalies),
+			type: 'predictive', // Marca especial para alertas preventivas
+		};
+
+		this.alerts.push(alert);
+		return alert;
+	}
+
+	/**
+	 * Detecta riesgo predictivo de sobrecarga térmica
+	 * Combina predicciones de temperatura + energía
+	 */
+	checkPredictiveThermalRisk(floorId, tempPredictions, powerPredictions) {
+		if (!tempPredictions?.predictions || !powerPredictions?.predictions) return null;
+
+		// Buscar momento donde coincidan temperatura alta + energía alta
+		for (let i = 0; i < tempPredictions.predictions.length; i++) {
+			const tempPred = tempPredictions.predictions[i];
+			const powerPred = powerPredictions.predictions[i];
+
+			// Riesgo crítico: Temp ≥29.5°C + Consumo ≥180 kWh
+			if (tempPred.temperature >= 29.5 && powerPred.powerConsumption >= 180) {
+				return {
+					type: 'predictive_thermal_overload',
+					severity: 'critical',
+					metric: 'Predicción de Sobrecarga Térmica',
+					value: {
+						temperature: tempPred.temperature,
+						powerConsumption: powerPred.powerConsumption,
+					},
+					minutesAhead: tempPred.minutesAhead,
+					message: `ALERTA CRÍTICA PREVENTIVA: Predicción indica que el Piso ${floorId} superará ${tempPred.temperature}°C en ${tempPred.minutesAhead} minutos con consumo alto de ${powerPred.powerConsumption} kWh`,
+					recommendation: `ACCIÓN INMEDIATA PREVENTIVA: Reducir carga térmica del Piso ${floorId} AHORA. Ajustar setpoint a 21°C, activar ventilación máxima, y redistribuir equipos de alto consumo a otros pisos. Evitar sobrecarga antes de que ocurra.`,
+					timestamp: new Date().toISOString(),
+					predictedTime: tempPred.timestamp,
+				};
+			}
+
+			// Riesgo moderado: Temp ≥28°C + Consumo ≥150 kWh
+			if (tempPred.temperature >= 28 && powerPred.powerConsumption >= 150) {
+				return {
+					type: 'predictive_thermal_overload',
+					severity: 'warning',
+					metric: 'Predicción de Riesgo Térmico',
+					value: {
+						temperature: tempPred.temperature,
+						powerConsumption: powerPred.powerConsumption,
+					},
+					minutesAhead: tempPred.minutesAhead,
+					message: `Alerta preventiva: Se predice riesgo térmico en Piso ${floorId} (${tempPred.temperature}°C + ${powerPred.powerConsumption} kWh) en ${tempPred.minutesAhead} minutos`,
+					recommendation: `Preparar medidas preventivas en Piso ${floorId}: ajustar climatización a 23°C, revisar equipos de alto consumo, y optimizar ventilación en los próximos ${Math.max(10, tempPred.minutesAhead - 10)} minutos.`,
+					timestamp: new Date().toISOString(),
+					predictedTime: tempPred.timestamp,
+				};
+			}
+		}
+
+		return null;
 	}
 }
 

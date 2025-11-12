@@ -84,7 +84,7 @@ const sendTestEmail = async (req, res) => {
       });
     }
 
-    const service = getEmailService();
+    // const service = getEmailService();
 
     // ✅ IMPLEMENTADO - Enviar email de prueba
     const result = await service.sendTestEmail(email);
@@ -139,7 +139,7 @@ const sendAlertEmail = async (req, res) => {
       });
     }
 
-    const service = getEmailService();
+    // const service = getEmailService();
 
     // ✅ IMPLEMENTADO - Enviar alerta
     const result = await service.sendAlert(alert);
@@ -186,7 +186,7 @@ const sendDailySummary = async (req, res) => {
       });
     }
 
-    const service = getEmailService();
+    // const service = getEmailService();
 
     // ✅ IMPLEMENTADO - Enviar resumen diario
     const result = await service.sendDailySummary(summary);

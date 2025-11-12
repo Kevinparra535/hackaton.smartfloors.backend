@@ -174,7 +174,7 @@ class EmailService {
       console.log(`   Destinatarios: ${recipients.join(', ')}`);
 
       // 7. ENVIAR CON EMAILJS - Enviar un email por cada destinatario
-      const sendPromises = recipients.map(recipient => 
+      const sendPromises = recipients.map(recipient =>
         emailjs.send(
           this.serviceId,
           templateId,
@@ -237,8 +237,8 @@ class EmailService {
       }
 
       const templateParams = {
-        date: new Date().toLocaleDateString('es-ES', { 
-          dateStyle: 'full' 
+        date: new Date().toLocaleDateString('es-ES', {
+          dateStyle: 'full'
         }),
         total_alerts: summary.total || 0,
         critical_count: summary.critical || 0,
@@ -274,7 +274,7 @@ class EmailService {
       await Promise.allSettled(sendPromises);
 
       console.log('✅ Resumen diario enviado');
-      
+
       return {
         sent: true,
         recipients: recipients.length,
