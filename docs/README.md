@@ -18,23 +18,23 @@ Si eres nuevo en SmartFloors, empieza aquí:
 
 ### Para Usuarios
 
-| Guía | Descripción | Nivel |
-|------|-------------|-------|
-| **[🌐 API REST](api/API_REFERENCE.md)** | Referencia completa de 23 endpoints | ⭐ Básico |
-| **[⚡ WebSocket](api/WEBSOCKET_GUIDE.md)** | Eventos en tiempo real | ⭐⭐ Intermedio |
-| **[📊 Exportación CSV](guides/EXPORT_CSV_GUIDE.md)** | Exportar datos para análisis | ⭐ Básico |
-| **[🧪 Testing con Postman](guides/POSTMAN_GUIDE.md)** | 35 requests pre-configurados | ⭐ Básico |
-| **[💡 Ejemplos de Integración](guides/EXAMPLES.md)** | Código real de uso | ⭐⭐ Intermedio |
+| Guía                                                  | Descripción                         | Nivel           |
+| ----------------------------------------------------- | ----------------------------------- | --------------- |
+| **[🌐 API REST](api/API_REFERENCE.md)**               | Referencia completa de 23 endpoints | ⭐ Básico       |
+| **[⚡ WebSocket](api/WEBSOCKET_GUIDE.md)**            | Eventos en tiempo real              | ⭐⭐ Intermedio |
+| **[📊 Exportación CSV](guides/EXPORT_CSV_GUIDE.md)**  | Exportar datos para análisis        | ⭐ Básico       |
+| **[🧪 Testing con Postman](guides/POSTMAN_GUIDE.md)** | 35 requests pre-configurados        | ⭐ Básico       |
+| **[💡 Ejemplos de Integración](guides/EXAMPLES.md)**  | Código real de uso                  | ⭐⭐ Intermedio |
 
 ### Para Desarrolladores
 
-| Documento | Descripción | Nivel |
-|-----------|-------------|-------|
-| **[🏗️ Arquitectura del Sistema](development/ARCHITECTURE.md)** | Estructura y patrones | ⭐⭐⭐ Avanzado |
-| **[🔧 Configuración](development/CONFIGURATION.md)** | Variables de entorno | ⭐ Básico |
-| **[📧 Setup de Email](development/EMAIL_SETUP.md)** | Notificaciones por correo | ⭐⭐ Intermedio |
-| **[🐛 Troubleshooting](development/TROUBLESHOOTING.md)** | Solución de problemas | ⭐ Básico |
-| **[🤝 Contribuir](development/CONTRIBUTING.md)** | Guía para contributors | ⭐⭐ Intermedio |
+| Documento                                                      | Descripción               | Nivel           |
+| -------------------------------------------------------------- | ------------------------- | --------------- |
+| **[🏗️ Arquitectura del Sistema](development/ARCHITECTURE.md)** | Estructura y patrones     | ⭐⭐⭐ Avanzado |
+| **[🔧 Configuración](development/CONFIGURATION.md)**           | Variables de entorno      | ⭐ Básico       |
+| **[📧 Setup de Email](development/EMAIL_SETUP.md)**            | Notificaciones por correo | ⭐⭐ Intermedio |
+| **[🐛 Troubleshooting](development/TROUBLESHOOTING.md)**       | Solución de problemas     | ⭐ Básico       |
+| **[🤝 Contribuir](development/CONTRIBUTING.md)**               | Guía para contributors    | ⭐⭐ Intermedio |
 
 ---
 
@@ -114,16 +114,16 @@ docs/
 
 ### ¿Cómo...?
 
-| Quiero... | Ir a... |
-|-----------|---------|
-| Instalar el proyecto | [INSTALLATION.md](guides/INSTALLATION.md) |
-| Conectar WebSocket | [WEBSOCKET_GUIDE.md](api/WEBSOCKET_GUIDE.md) |
-| Ver todos los endpoints | [API_REFERENCE.md](api/API_REFERENCE.md) |
-| Exportar alertas a CSV | [EXPORT_CSV_GUIDE.md](guides/EXPORT_CSV_GUIDE.md) |
-| Configurar emails | [EMAIL_SETUP.md](development/EMAIL_SETUP.md) |
-| Entender la arquitectura | [ARCHITECTURE.md](development/ARCHITECTURE.md) |
-| Resolver un error | [TROUBLESHOOTING.md](development/TROUBLESHOOTING.md) |
-| Contribuir código | [CONTRIBUTING.md](development/CONTRIBUTING.md) |
+| Quiero...                | Ir a...                                              |
+| ------------------------ | ---------------------------------------------------- |
+| Instalar el proyecto     | [INSTALLATION.md](guides/INSTALLATION.md)            |
+| Conectar WebSocket       | [WEBSOCKET_GUIDE.md](api/WEBSOCKET_GUIDE.md)         |
+| Ver todos los endpoints  | [API_REFERENCE.md](api/API_REFERENCE.md)             |
+| Exportar alertas a CSV   | [EXPORT_CSV_GUIDE.md](guides/EXPORT_CSV_GUIDE.md)    |
+| Configurar emails        | [EMAIL_SETUP.md](development/EMAIL_SETUP.md)         |
+| Entender la arquitectura | [ARCHITECTURE.md](development/ARCHITECTURE.md)       |
+| Resolver un error        | [TROUBLESHOOTING.md](development/TROUBLESHOOTING.md) |
+| Contribuir código        | [CONTRIBUTING.md](development/CONTRIBUTING.md)       |
 
 ---
 
