@@ -12,15 +12,23 @@ class AlertService {
 				veryHigh: 95,
 				low: 5,
 			},
+			// Temperatura en °C
+			// Informativa: 26-27.9, Media: 28-29.4, Crítica: ≥29.5
 			temperature: {
-				high: 25,
-				veryHigh: 27,
-				low: 18,
+				info: 26,        // Nivel informativo: 26-27.9°C
+				warning: 28,     // Nivel medio: 28-29.4°C
+				critical: 29.5,  // Nivel crítico: ≥29.5°C
+				low: 18,         // Temperatura baja
 			},
+			// Humedad relativa en %
+			// Informativa: <25 o >70, Media: <22 o >75, Crítica: <20 o >80
 			humidity: {
-				high: 65,
-				veryHigh: 70,
-				low: 30,
+				high_info: 70,      // Nivel informativo alto: >70%
+				high_warning: 75,   // Nivel medio alto: >75%
+				high_critical: 80,  // Nivel crítico alto: >80%
+				low_info: 25,       // Nivel informativo bajo: <25%
+				low_warning: 22,    // Nivel medio bajo: <22%
+				low_critical: 20,   // Nivel crítico bajo: <20%
 			},
 			powerConsumption: {
 				high: 150,
@@ -83,8 +91,6 @@ class AlertService {
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkOccupancy(occupancy, history, floorId = 0) {
-		const hour = new Date().getHours();
-
 		// Ocupación muy alta
 		if (occupancy >= this.thresholds.occupancy.veryHigh) {
 			const targetFloor = floorId > 1 ? floorId - 1 : floorId + 1;
@@ -136,25 +142,28 @@ class AlertService {
 
 	/**
 	 * Verifica anomalías en temperatura
+	 * Umbrales: Informativa 26-27.9°C, Media 28-29.4°C, Crítica ≥29.5°C
 	 * @param {Number} temperature - Temperatura actual
 	 * @param {Number} occupancy - Ocupación actual
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkTemperature(temperature, occupancy, floorId = 0) {
-		if (temperature >= this.thresholds.temperature.veryHigh) {
-			const targetTemp = Math.max(22, temperature - 3);
+		// Crítica: ≥29.5°C
+		if (temperature >= this.thresholds.temperature.critical) {
+			const targetTemp = Math.max(22, temperature - 4);
 			return {
 				type: 'temperature',
 				severity: 'critical',
 				metric: 'Temperatura',
 				value: temperature,
-				message: `Temperatura muy alta: ${temperature}°C`,
-				recommendation: `Ajustar setpoint del Piso ${floorId} a ${targetTemp}°C de inmediato. Activar aire acondicionado al máximo y reducir ocupación si es posible.`,
+				message: `Temperatura crítica: ${temperature}°C`,
+				recommendation: `CRÍTICO: Ajustar setpoint del Piso ${floorId} a ${targetTemp}°C de inmediato. Activar aire acondicionado al máximo y reducir ocupación si es posible.`,
 				timestamp: new Date().toISOString(),
 			};
 		}
 
-		if (temperature >= this.thresholds.temperature.high) {
+		// Media: 28-29.4°C
+		if (temperature >= this.thresholds.temperature.warning) {
 			const targetTemp = 24;
 			return {
 				type: 'temperature',
@@ -167,6 +176,20 @@ class AlertService {
 			};
 		}
 
+		// Informativa: 26-27.9°C
+		if (temperature >= this.thresholds.temperature.info) {
+			return {
+				type: 'temperature',
+				severity: 'info',
+				metric: 'Temperatura',
+				value: temperature,
+				message: `Temperatura por encima del rango óptimo: ${temperature}°C`,
+				recommendation: `Monitorear temperatura en Piso ${floorId}. Considerar ajustar setpoint a 24°C en los próximos 20 min si continúa aumentando.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Temperatura baja
 		if (temperature <= this.thresholds.temperature.low) {
 			const targetTemp = 21;
 			return {
@@ -198,23 +221,26 @@ class AlertService {
 
 	/**
 	 * Verifica anomalías en humedad
+	 * Umbrales: Informativa (<25 o >70), Media (<22 o >75), Crítica (<20 o >80)
 	 * @param {Number} humidity - Humedad actual
 	 * @param {Number} floorId - ID del piso
 	 */
 	checkHumidity(humidity, floorId = 0) {
-		if (humidity >= this.thresholds.humidity.veryHigh) {
+		// Crítica alta: >80%
+		if (humidity > this.thresholds.humidity.high_critical) {
 			return {
 				type: 'humidity',
 				severity: 'critical',
 				metric: 'Humedad',
 				value: humidity,
-				message: `Humedad muy alta: ${humidity}%`,
-				recommendation: `Activar deshumidificadores en Piso ${floorId} de inmediato. Incrementar ventilación; revisar puertas/celosías. Alta humedad puede afectar confort y equipos.`,
+				message: `Humedad crítica: ${humidity}%`,
+				recommendation: `CRÍTICO: Activar deshumidificadores en Piso ${floorId} de inmediato. Incrementar ventilación al máximo; revisar puertas/celosías. Alta humedad puede afectar confort y equipos.`,
 				timestamp: new Date().toISOString(),
 			};
 		}
 
-		if (humidity >= this.thresholds.humidity.high) {
+		// Media alta: >75%
+		if (humidity > this.thresholds.humidity.high_warning) {
 			return {
 				type: 'humidity',
 				severity: 'warning',
@@ -226,7 +252,34 @@ class AlertService {
 			};
 		}
 
-		if (humidity <= this.thresholds.humidity.low) {
+		// Informativa alta: >70%
+		if (humidity > this.thresholds.humidity.high_info) {
+			return {
+				type: 'humidity',
+				severity: 'info',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad por encima del rango óptimo: ${humidity}%`,
+				recommendation: `Monitorear humedad en Piso ${floorId}. Considerar activar deshumidificación si continúa aumentando en los próximos 30 min.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Crítica baja: <20%
+		if (humidity < this.thresholds.humidity.low_critical) {
+			return {
+				type: 'humidity',
+				severity: 'critical',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad crítica baja: ${humidity}%`,
+				recommendation: `CRÍTICO: Activar humidificadores en Piso ${floorId} de inmediato. Ambiente extremadamente seco puede afectar salud y confort.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Media baja: <22%
+		if (humidity < this.thresholds.humidity.low_warning) {
 			return {
 				type: 'humidity',
 				severity: 'warning',
@@ -234,6 +287,19 @@ class AlertService {
 				value: humidity,
 				message: `Humedad baja: ${humidity}%`,
 				recommendation: `Activar humidificadores en Piso ${floorId}. Ambiente muy seco puede afectar salud y confort.`,
+				timestamp: new Date().toISOString(),
+			};
+		}
+
+		// Informativa baja: <25%
+		if (humidity < this.thresholds.humidity.low_info) {
+			return {
+				type: 'humidity',
+				severity: 'info',
+				metric: 'Humedad',
+				value: humidity,
+				message: `Humedad por debajo del rango óptimo: ${humidity}%`,
+				recommendation: `Monitorear humedad en Piso ${floorId}. Considerar activar humidificación si continúa disminuyendo.`,
 				timestamp: new Date().toISOString(),
 			};
 		}

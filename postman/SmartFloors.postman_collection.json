@@ -288,6 +288,23 @@
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData.data).to.have.property('alerts');",
                   "    pm.expect(jsonData.data.alerts).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has count\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('count');",
+                  "});",
+                  "",
+                  "pm.test(\"Each alert has required properties\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.alerts.length > 0) {",
+                  "        jsonData.data.alerts.forEach(function(alert) {",
+                  "            pm.expect(alert).to.have.property('floorId');",
+                  "            pm.expect(alert).to.have.property('severity');",
+                  "            pm.expect(alert).to.have.property('anomalies');",
+                  "            pm.expect(alert.anomalies).to.be.an('array');",
+                  "        });",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -305,9 +322,240 @@
             "description": "Obtiene todas las alertas activas del sistema de detección de anomalías"
           },
           "response": []
+        },
+        {
+          "name": "Get Critical Alerts Only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All alerts are critical\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.alerts.forEach(function(alert) {",
+                  "        pm.expect(alert.severity).to.eql('critical');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Response has filters applied\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.filters.severity).to.eql('critical');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?severity=critical",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "critical",
+                  "description": "Filtrar por severidad (critical, warning, info)"
+                }
+              ]
+            },
+            "description": "Obtiene solo las alertas críticas del sistema"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Alerts by Floor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All alerts are from floor 3\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.alerts.forEach(function(alert) {",
+                  "        pm.expect(alert.floorId).to.eql(3);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?floorId=3",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "floorId",
+                  "value": "3",
+                  "description": "Filtrar por ID de piso (1-100)"
+                }
+              ]
+            },
+            "description": "Obtiene alertas de un piso específico"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Alerts by Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All alerts contain temperature anomaly\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.alerts.forEach(function(alert) {",
+                  "        var hasTemperature = alert.anomalies.some(function(anomaly) {",
+                  "            return anomaly.type === 'temperature';",
+                  "        });",
+                  "        pm.expect(hasTemperature).to.be.true;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?type=temperature",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "temperature",
+                  "description": "Filtrar por tipo de anomalía (occupancy, temperature, humidity, power, thermal_overload, sudden_change)"
+                }
+              ]
+            },
+            "description": "Obtiene alertas que contengan un tipo específico de anomalía"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Alerts with Multiple Filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response respects limit\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.alerts.length).to.be.at.most(5);",
+                  "});",
+                  "",
+                  "pm.test(\"Filters are applied correctly\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.filters).to.have.property('severity');",
+                  "    pm.expect(jsonData.data.filters).to.have.property('floorId');",
+                  "    pm.expect(jsonData.data.filters).to.have.property('limit');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?severity=critical&floorId=3&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "critical",
+                  "description": "Severidad de alerta"
+                },
+                {
+                  "key": "floorId",
+                  "value": "3",
+                  "description": "ID del piso"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Máximo de resultados (1-100)"
+                }
+              ]
+            },
+            "description": "Obtiene alertas combinando múltiples filtros: severidad crítica, del piso 3, limitado a 5 resultados"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Thermal Overload Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All alerts contain thermal_overload anomaly\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.alerts.forEach(function(alert) {",
+                  "        var hasThermalOverload = alert.anomalies.some(function(anomaly) {",
+                  "            return anomaly.type === 'thermal_overload';",
+                  "        });",
+                  "        pm.expect(hasThermalOverload).to.be.true;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?type=thermal_overload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "thermal_overload",
+                  "description": "Filtrar alertas de sobrecarga térmica"
+                }
+              ]
+            },
+            "description": "Obtiene alertas de riesgo de sobrecarga térmica (temperatura alta + consumo energético alto)"
+          },
+          "response": []
         }
       ],
-      "description": "Endpoints para gestión de alertas y anomalías"
+      "description": "Endpoints para gestión de alertas y anomalías con capacidades de filtrado"
     },
     {
       "name": "Validaciones (Errores esperados)",
@@ -519,6 +767,158 @@
               ]
             },
             "description": "Prueba validación: minutesAhead debe ser <= 180"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Alert Severity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions valid severities\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"critical\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?severity=invalid",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "invalid"
+                }
+              ]
+            },
+            "description": "Prueba validación: severity debe ser critical, warning o info"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Alert Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions valid types\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"occupancy\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?type=invalid_type",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "invalid_type"
+                }
+              ]
+            },
+            "description": "Prueba validación: type debe ser uno de los tipos válidos de anomalía"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Alert Limit - Too High",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions maximum limit\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"100\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?limit=150",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "150"
+                }
+              ]
+            },
+            "description": "Prueba validación: limit de alertas debe ser <= 100"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Alert FloorId in Filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message mentions floor ID range\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.message).to.include(\"piso\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/{{api_version}}/alerts?floorId=999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "{{api_version}}", "alerts"],
+              "query": [
+                {
+                  "key": "floorId",
+                  "value": "999"
+                }
+              ]
+            },
+            "description": "Prueba validación: floorId en filtro debe ser 1-100"
           },
           "response": []
         }

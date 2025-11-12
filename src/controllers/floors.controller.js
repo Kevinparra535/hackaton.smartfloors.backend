@@ -159,7 +159,7 @@ const getFloorPredictions = (req, res) => {
 };
 
 /**
- * Obtiene todas las alertas activas
+ * Obtiene todas las alertas activas con filtros opcionales
  */
 const getAllAlerts = (req, res) => {
 	try {
@@ -172,13 +172,49 @@ const getAllAlerts = (req, res) => {
 			});
 		}
 
-		const alerts = alertService.getAlerts();
+		let alerts = alertService.getAlerts();
+
+		// Aplicar filtros si existen
+		const { severity, floorId, type, limit } = req.query;
+
+		// Filtrar por severidad
+		if (severity) {
+			alerts = alerts.filter((alert) => alert.severity === severity);
+		}
+
+		// Filtrar por piso
+		if (floorId) {
+			const floorIdNum = parseInt(floorId);
+			alerts = alerts.filter((alert) => alert.floorId === floorIdNum);
+		}
+
+		// Filtrar por tipo de anomalía
+		if (type) {
+			alerts = alerts.filter((alert) =>
+				alert.anomalies.some((anomaly) => anomaly.type === type)
+			);
+		}
+
+		// Ordenar por timestamp descendente (más recientes primero)
+		alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+		// Aplicar límite
+		if (limit) {
+			const limitNum = parseInt(limit);
+			alerts = alerts.slice(0, limitNum);
+		}
 
 		res.json({
 			success: true,
 			data: {
 				alerts,
 				count: alerts.length,
+				filters: {
+					severity: severity || null,
+					floorId: floorId ? parseInt(floorId) : null,
+					type: type || null,
+					limit: limit ? parseInt(limit) : null,
+				},
 			},
 			timestamp: new Date().toISOString(),
 		});
