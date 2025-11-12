@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFloors - Prueba Exportación CSV</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.9em;
+        }
+        input, select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        .stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+        .status.show {
+            display: block;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .code-example {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .keyword { color: #c678dd; }
+        .function { color: #61afef; }
+        .string { color: #98c379; }
+        .comment { color: #5c6370; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📥 SmartFloors - Exportación CSV</h1>
+        <p class="subtitle">Prueba de endpoints de descarga desde el frontend</p>
+
+        <!-- Estadísticas -->
+        <div class="section">
+            <h2>📊 Estadísticas Disponibles</h2>
+            <button class="btn-info" onclick="loadStats()">🔄 Actualizar Estadísticas</button>
+            <div id="stats-container"></div>
+            <div id="stats-status" class="status"></div>
+        </div>
+
+        <!-- Exportar Alertas -->
+        <div class="section">
+            <h2>🚨 Exportar Alertas</h2>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Severidad</label>
+                    <select id="alert-severity">
+                        <option value="">Todas</option>
+                        <option value="critical">Crítico</option>
+                        <option value="warning">Advertencia</option>
+                        <option value="info">Info</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Piso</label>
+                    <input type="number" id="alert-floor" placeholder="1-100" min="1" max="100">
+                </div>
+                <div class="filter-group">
+                    <label>Fecha Inicio</label>
+                    <input type="date" id="alert-start-date">
+                </div>
+                <div class="filter-group">
+                    <label>Fecha Fin</label>
+                    <input type="date" id="alert-end-date">
+                </div>
+                <div class="filter-group">
+                    <label>Tipo</label>
+                    <select id="alert-predictive">
+                        <option value="">Todas</option>
+                        <option value="false">Actuales</option>
+                        <option value="true">Predictivas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="buttons">
+                <button class="btn-primary" onclick="downloadAlerts()">📥 Descargar Alertas CSV</button>
+                <button class="btn-secondary" onclick="downloadAlertsBlob()">📥 Descargar con Fetch API</button>
+            </div>
+            <div id="alert-status" class="status"></div>
+        </div>
+
+        <!-- Exportar Historial -->
+        <div class="section">
+            <h2>📈 Exportar Historial</h2>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Piso</label>
+                    <input type="number" id="history-floor" placeholder="1-100 (vacío = todos)" min="1" max="100">
+                </div>
+                <div class="filter-group">
+                    <label>Límite de Registros</label>
+                    <input type="number" id="history-limit" placeholder="1-1440" min="1" max="1440" value="100">
+                </div>
+                <div class="filter-group">
+                    <label>Fecha Inicio</label>
+                    <input type="date" id="history-start-date">
+                </div>
+                <div class="filter-group">
+                    <label>Fecha Fin</label>
+                    <input type="date" id="history-end-date">
+                </div>
+            </div>
+            <div class="buttons">
+                <button class="btn-success" onclick="downloadHistory()">📥 Descargar Historial CSV</button>
+            </div>
+            <div id="history-status" class="status"></div>
+        </div>
+
+        <!-- Ejemplos de Código -->
+        <div class="section">
+            <h2>💻 Ejemplos de Código</h2>
+            <p><strong>Método 1: window.open() - Más simple</strong></p>
+            <div class="code-example">
+<span class="keyword">function</span> <span class="function">downloadAlerts</span>() {
+    <span class="keyword">const</span> params = <span class="keyword">new</span> <span class="function">URLSearchParams</span>({
+        severity: <span class="string">'critical'</span>,
+        floorId: <span class="string">'1'</span>
+    });
+    <span class="keyword">const</span> url = <span class="string">`http://localhost:3000/api/v1/export/alerts/csv?${params}`</span>;
+    window.<span class="function">open</span>(url, <span class="string">'_blank'</span>); <span class="comment">// Descarga automática</span>
+}
+            </div>
+
+            <p><strong>Método 2: Fetch + Blob - Mejor manejo de errores</strong></p>
+            <div class="code-example">
+<span class="keyword">async function</span> <span class="function">downloadAlerts</span>() {
+    <span class="keyword">try</span> {
+        <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'http://localhost:3000/api/v1/export/alerts/csv'</span>);
+
+        <span class="keyword">if</span> (!response.ok) {
+            <span class="keyword">const</span> error = <span class="keyword">await</span> response.<span class="function">json</span>();
+            <span class="function">alert</span>(<span class="string">`Error: ${error.message}`</span>);
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">const</span> blob = <span class="keyword">await</span> response.<span class="function">blob</span>();
+        <span class="keyword">const</span> url = window.URL.<span class="function">createObjectURL</span>(blob);
+        <span class="keyword">const</span> a = document.<span class="function">createElement</span>(<span class="string">'a'</span>);
+        a.href = url;
+        a.download = <span class="string">`alertas-${Date.now()}.csv`</span>;
+        a.<span class="function">click</span>();
+        window.URL.<span class="function">revokeObjectURL</span>(url);
+    } <span class="keyword">catch</span> (error) {
+        <span class="function">console.error</span>(<span class="string">'Error:'</span>, error);
+    }
+}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/v1';
+
+        // Cargar estadísticas
+        async function loadStats() {
+            const status = document.getElementById('stats-status');
+            const container = document.getElementById('stats-container');
+
+            status.className = 'status show loading';
+            status.textContent = '⏳ Cargando estadísticas...';
+
+            try {
+                const response = await fetch(`${API_BASE}/export/stats`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const { alerts, history } = data.data;
+
+                    container.innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Alertas</div>
+                                <div class="stat-value">${alerts.total}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Críticas</div>
+                                <div class="stat-value" style="color: #dc3545;">${alerts.bySeverity.critical}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Advertencias</div>
+                                <div class="stat-value" style="color: #ffc107;">${alerts.bySeverity.warning}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Registros Históricos</div>
+                                <div class="stat-value">${history.total}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Actuales</div>
+                                <div class="stat-value" style="color: #28a745;">${alerts.byType.current}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Predictivas</div>
+                                <div class="stat-value" style="color: #17a2b8;">${alerts.byType.predictive}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    status.className = 'status show success';
+                    status.textContent = '✅ Estadísticas cargadas correctamente';
+
+                    setTimeout(() => {
+                        status.className = 'status';
+                    }, 3000);
+                }
+            } catch (error) {
+                status.className = 'status show error';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Método 1: Descargar alertas con window.open()
+        function downloadAlerts() {
+            const params = new URLSearchParams();
+
+            const severity = document.getElementById('alert-severity').value;
+            const floor = document.getElementById('alert-floor').value;
+            const startDate = document.getElementById('alert-start-date').value;
+            const endDate = document.getElementById('alert-end-date').value;
+            const predictive = document.getElementById('alert-predictive').value;
+
+            if (severity) params.append('severity', severity);
+            if (floor) params.append('floorId', floor);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (predictive) params.append('isPredictive', predictive);
+
+            const url = `${API_BASE}/export/alerts/csv?${params}`;
+
+            const status = document.getElementById('alert-status');
+            status.className = 'status show success';
+            status.textContent = '✅ Descarga iniciada. Revisa tu carpeta de descargas.';
+
+            setTimeout(() => {
+                status.className = 'status';
+            }, 3000);
+
+            window.open(url, '_blank');
+        }
+
+        // Método 2: Descargar alertas con Fetch + Blob
+        async function downloadAlertsBlob() {
+            const status = document.getElementById('alert-status');
+            status.className = 'status show loading';
+            status.textContent = '⏳ Descargando...';
+
+            try {
+                const params = new URLSearchParams();
+
+                const severity = document.getElementById('alert-severity').value;
+                const floor = document.getElementById('alert-floor').value;
+                const startDate = document.getElementById('alert-start-date').value;
+                const endDate = document.getElementById('alert-end-date').value;
+                const predictive = document.getElementById('alert-predictive').value;
+
+                if (severity) params.append('severity', severity);
+                if (floor) params.append('floorId', floor);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+                if (predictive) params.append('isPredictive', predictive);
+
+                const response = await fetch(`${API_BASE}/export/alerts/csv?${params}`);
+
+                if (response.status === 404) {
+                    status.className = 'status show error';
+                    status.textContent = '⚠️ No se encontraron alertas con esos filtros';
+                    setTimeout(() => { status.className = 'status'; }, 5000);
+                    return;
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `smartfloors-alertas-${Date.now()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                status.className = 'status show success';
+                status.textContent = '✅ Descarga completada correctamente';
+
+                setTimeout(() => {
+                    status.className = 'status';
+                }, 3000);
+
+            } catch (error) {
+                status.className = 'status show error';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Descargar historial
+        async function downloadHistory() {
+            const status = document.getElementById('history-status');
+            status.className = 'status show loading';
+            status.textContent = '⏳ Descargando historial...';
+
+            try {
+                const params = new URLSearchParams();
+
+                const floor = document.getElementById('history-floor').value;
+                const limit = document.getElementById('history-limit').value;
+                const startDate = document.getElementById('history-start-date').value;
+                const endDate = document.getElementById('history-end-date').value;
+
+                if (floor) params.append('floorId', floor);
+                if (limit) params.append('limit', limit);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+
+                const response = await fetch(`${API_BASE}/export/history/csv?${params}`);
+
+                if (response.status === 404) {
+                    status.className = 'status show error';
+                    status.textContent = '⚠️ No se encontraron datos históricos con esos filtros';
+                    setTimeout(() => { status.className = 'status'; }, 5000);
+                    return;
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `smartfloors-historial-${Date.now()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                status.className = 'status show success';
+                status.textContent = '✅ Historial descargado correctamente';
+
+                setTimeout(() => {
+                    status.className = 'status';
+                }, 3000);
+
+            } catch (error) {
+                status.className = 'status show error';
+                status.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Cargar estadísticas al inicio
+        loadStats();
+    </script>
+</body>
+</html>

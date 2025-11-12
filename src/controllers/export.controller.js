@@ -82,9 +82,8 @@ const exportAlerts = (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Agregar BOM para soporte UTF-8 en Excel
-    res.write('\uFEFF');
-    res.send(csv);
+    // Enviar BOM + CSV (BOM para soporte UTF-8 en Excel)
+    res.send('\uFEFF' + csv);
   } catch (error) {
     console.error('Error al exportar alertas:', error);
     res.status(500).json({
@@ -156,9 +155,8 @@ const exportHistory = (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Agregar BOM para soporte UTF-8 en Excel
-    res.write('\uFEFF');
-    res.send(csv);
+    // Enviar BOM + CSV (BOM para soporte UTF-8 en Excel)
+    res.send('\uFEFF' + csv);
   } catch (error) {
     console.error('Error al exportar historial:', error);
     res.status(500).json({
