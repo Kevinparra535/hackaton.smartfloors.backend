@@ -168,29 +168,29 @@ class EmailService {
       }
 
       // TODO: Preparar parámetros para la plantilla de email
-      const templateParams = {
-        // Información del piso
-        building_name: alert.buildingName || 'Edificio',
-        floor_name: alert.floorName || `Piso ${alert.floorId}`,
-        floor_id: alert.floorId,
+      // const templateParams = {
+      //   // Información del piso
+      //   building_name: alert.buildingName || 'Edificio',
+      //   floor_name: alert.floorName || `Piso ${alert.floorId}`,
+      //   floor_id: alert.floorId,
 
-        // Información de la alerta
-        severity: alert.severity.toUpperCase(),
-        timestamp: new Date(alert.timestamp).toLocaleString('es-ES'),
+      //   // Información de la alerta
+      //   severity: alert.severity.toUpperCase(),
+      //   timestamp: new Date(alert.timestamp).toLocaleString('es-ES'),
 
-        // Anomalías (combinar todas en un string)
-        anomalies_count: alert.anomalies.length,
-        anomalies_list: this._formatAnomaliesForEmail(alert.anomalies),
+      //   // Anomalías (combinar todas en un string)
+      //   anomalies_count: alert.anomalies.length,
+      //   anomalies_list: this._formatAnomaliesForEmail(alert.anomalies),
 
-        // Primera anomalía (para resumen rápido)
-        main_metric: alert.anomalies[0]?.metric || '',
-        main_message: alert.anomalies[0]?.message || '',
-        main_recommendation: alert.anomalies[0]?.recommendation || '',
+      //   // Primera anomalía (para resumen rápido)
+      //   main_metric: alert.anomalies[0]?.metric || '',
+      //   main_message: alert.anomalies[0]?.message || '',
+      //   main_recommendation: alert.anomalies[0]?.recommendation || '',
 
-        // Estilo según severidad
-        severity_color: this._getSeverityColor(alert.severity),
-        severity_icon: this._getSeverityIcon(alert.severity),
-      };
+      //   // Estilo según severidad
+      //   severity_color: this._getSeverityColor(alert.severity),
+      //   severity_icon: this._getSeverityIcon(alert.severity),
+      // };
 
       // TODO: Obtener lista de destinatarios según severidad
       const recipients = this._getRecipients(alert.severity);
@@ -201,7 +201,7 @@ class EmailService {
       }
 
       // TODO: Seleccionar plantilla según severidad
-      const templateId = this.templates[alert.severity] || this.templates.info;
+      // const templateId = this.templates[alert.severity] || this.templates.info;
 
       // TODO: IMPLEMENTAR ENVÍO CON EMAILJS
       // Ejemplo de implementación (descomentar después de instalar @emailjs/nodejs):
@@ -300,11 +300,11 @@ class EmailService {
     try {
       // TODO: Implementar envío de email de prueba
 
-      const templateParams = {
-        to_email: email,
-        message: 'Este es un email de prueba del sistema SmartFloors',
-        timestamp: new Date().toLocaleString('es-ES'),
-      };
+      // const templateParams = {
+      //   to_email: email,
+      //   message: 'Este es un email de prueba del sistema SmartFloors',
+      //   timestamp: new Date().toLocaleString('es-ES'),
+      // };
 
       console.log('⚠️  MÉTODO sendTestEmail() NO IMPLEMENTADO');
       console.log('   Destinatario:', email);

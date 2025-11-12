@@ -21,9 +21,13 @@ const getAlertsFiltersSchema = Joi.object({
     'humidity',
     'power',
     'thermal_overload',
-    'sudden_change'
+    'sudden_change',
+    'predictive_temperature',
+    'predictive_humidity',
+    'predictive_power',
+    'predictive_thermal_overload'
   ).optional().messages({
-    'any.only': 'El tipo debe ser: occupancy, temperature, humidity, power, thermal_overload o sudden_change',
+    'any.only': 'El tipo debe ser: occupancy, temperature, humidity, power, thermal_overload, sudden_change, predictive_temperature, predictive_humidity, predictive_power o predictive_thermal_overload',
   }),
   limit: Joi.number().integer().min(1).max(100).optional().messages({
     'number.base': 'El límite debe ser un número',
