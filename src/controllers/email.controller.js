@@ -5,30 +5,7 @@
  * Maneja las solicitudes REST relacionadas con el envío de emails
  */
 
-const EmailService = require('../services/email.services');
-
-// Instancia del servicio de email
-let emailService = null;
-
-/**
- * Inicializa el servicio de email
- */
-const initializeEmailService = () => {
-  if (!emailService) {
-    emailService = new EmailService();
-  }
-  return emailService;
-};
-
-/**
- * Obtiene la instancia del servicio (útil para otros módulos)
- */
-const getEmailService = () => {
-  if (!emailService) {
-    return initializeEmailService();
-  }
-  return emailService;
-};
+const { getEmailService } = require('../sockets/index');
 
 /**
  * GET /api/v1/email/status
@@ -37,6 +14,14 @@ const getEmailService = () => {
 const getEmailStatus = (req, res) => {
   try {
     const service = getEmailService();
+
+    if (!service) {
+      return res.status(503).json({
+        success: false,
+        message: 'Servicio de email no inicializado',
+      });
+    }
+
     const config = service.checkConfiguration();
     const stats = service.getStats();
 
@@ -44,7 +29,7 @@ const getEmailStatus = (req, res) => {
       success: true,
       data: {
         ...config,
-        stats,
+        ...stats,
       },
       timestamp: new Date().toISOString(),
     });
@@ -84,7 +69,14 @@ const sendTestEmail = async (req, res) => {
       });
     }
 
-    // const service = getEmailService();
+    const service = getEmailService();
+
+    if (!service) {
+      return res.status(503).json({
+        success: false,
+        message: 'Servicio de email no inicializado',
+      });
+    }
 
     // ✅ IMPLEMENTADO - Enviar email de prueba
     const result = await service.sendTestEmail(email);
@@ -139,7 +131,14 @@ const sendAlertEmail = async (req, res) => {
       });
     }
 
-    // const service = getEmailService();
+    const service = getEmailService();
+
+    if (!service) {
+      return res.status(503).json({
+        success: false,
+        message: 'Servicio de email no inicializado',
+      });
+    }
 
     // ✅ IMPLEMENTADO - Enviar alerta
     const result = await service.sendAlert(alert);
@@ -186,7 +185,14 @@ const sendDailySummary = async (req, res) => {
       });
     }
 
-    // const service = getEmailService();
+    const service = getEmailService();
+
+    if (!service) {
+      return res.status(503).json({
+        success: false,
+        message: 'Servicio de email no inicializado',
+      });
+    }
 
     // ✅ IMPLEMENTADO - Enviar resumen diario
     const result = await service.sendDailySummary(summary);
@@ -244,8 +250,6 @@ const clearCooldowns = (req, res) => {
 };
 
 module.exports = {
-  initializeEmailService,
-  getEmailService,
   getEmailStatus,
   sendTestEmail,
   sendAlertEmail,

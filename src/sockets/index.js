@@ -8,10 +8,12 @@
 const FloorSimulator = require('../services/simulator.services');
 const PredictionService = require('../services/prediction.services');
 const AlertService = require('../services/alerts.services');
+const EmailService = require('../services/email.services');
 
 let simulator;
 let predictionService;
 let alertService;
+let emailService;
 let simulationInterval;
 
 /**
@@ -23,6 +25,7 @@ function initializeSockets(io) {
   simulator = new FloorSimulator(numberOfFloors);
   predictionService = new PredictionService();
   alertService = new AlertService();
+  emailService = new EmailService();
 
   console.log(`✅ Servicios inicializados para ${numberOfFloors} pisos`);
 
@@ -101,6 +104,45 @@ function startSimulation(io) {
 }
 
 /**
+ * Envía emails para alertas críticas y de alto impacto
+ */
+async function sendEmailsForCriticalAlerts(alerts) {
+  // Filtrar solo alertas críticas o preventivas críticas
+  const criticalAlerts = alerts.filter(alert =>
+    alert.severity === 'critical' ||
+    (alert.type === 'predictive' && alert.severity === 'critical')
+  );
+
+  if (criticalAlerts.length === 0) {
+    return; // No hay alertas críticas
+  }
+
+  // Enviar email por cada alerta crítica
+  for (const alert of criticalAlerts) {
+    try {
+      const emailData = {
+        floorId: alert.floorId,
+        floorName: alert.floorName,
+        buildingName: process.env.BUILDING_NAME || 'Edificio Principal',
+        severity: alert.severity,
+        anomalies: alert.anomalies,
+        timestamp: alert.timestamp,
+      };
+
+      const result = await emailService.sendAlert(emailData);
+
+      if (result.sent) {
+        console.log(`📧 Email enviado para alerta ${alert.severity.toUpperCase()} - ${alert.floorName}`);
+      } else {
+        console.log(`⚠️  Email no enviado: ${result.reason || 'razón desconocida'}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error al enviar email para ${alert.floorName}:`, error.message);
+    }
+  }
+}
+
+/**
  * Genera datos y los emite a todos los clientes
  */
 function generateAndEmitData(io) {
@@ -158,6 +200,9 @@ function generateAndEmitData(io) {
       alerts: allAlerts,
       timestamp: new Date().toISOString(),
     });
+
+    // 📧 ENVIAR EMAILS PARA ALERTAS CRÍTICAS
+    sendEmailsForCriticalAlerts(allAlerts);
   }
 
   // Emitir predicciones
@@ -209,8 +254,16 @@ function getAlertService() {
   return alertService;
 }
 
+/**
+ * Obtiene instancia del servicio de email
+ */
+function getEmailService() {
+  return emailService;
+}
+
 module.exports = initializeSockets;
 module.exports.stopSimulation = stopSimulation;
 module.exports.getSimulator = getSimulator;
 module.exports.getPredictionService = getPredictionService;
 module.exports.getAlertService = getAlertService;
+module.exports.getEmailService = getEmailService;
