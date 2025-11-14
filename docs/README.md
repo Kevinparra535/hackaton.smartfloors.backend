@@ -1,6 +1,19 @@
 # 📚 Documentación SmartFloors
 
-Bienvenido a la documentación completa del proyecto SmartFloors.
+Bienvenido a la documentación completa del proyecto SmartFloors - Backend del sistema de monitoreo inteligente de edificios.
+
+---
+
+## 🎯 Documentación para Hackathon
+
+### 📘 Documentos Principales
+
+| Documento | Propósito | Audiencia |
+|-----------|-----------|-----------|
+| **[🏆 HACKATHON_README.md](../HACKATHON_README.md)** | README principal para hackathon con pitch, visión y arquitectura | Jurado + Evaluadores |
+| **[🎨 CREATIVE_VISION.md](CREATIVE_VISION.md)** | Manifiesto creativo: El edificio como organismo vivo | Jurado + Equipo |
+| **[🏗️ TECHNICAL_DECISIONS.md](TECHNICAL_DECISIONS.md)** | Decisiones técnicas y arquitectónicas justificadas | Evaluadores técnicos |
+| **[📋 JUDGES_GUIDE.md](JUDGES_GUIDE.md)** | Guía de evaluación con criterios y puntuación | Jurado |
 
 ---
 
@@ -20,11 +33,10 @@ Si eres nuevo en SmartFloors, empieza aquí:
 
 | Guía                                                  | Descripción                         | Nivel           |
 | ----------------------------------------------------- | ----------------------------------- | --------------- |
-| **[🌐 API REST](api/API_REFERENCE.md)**               | Referencia completa de 23 endpoints | ⭐ Básico       |
+| **[🌐 API REST](api/API_REFERENCE.md)**               | Referencia completa de endpoints | ⭐ Básico       |
 | **[⚡ WebSocket](api/WEBSOCKET_GUIDE.md)**            | Eventos en tiempo real              | ⭐⭐ Intermedio |
 | **[📊 Exportación CSV](guides/EXPORT_CSV_GUIDE.md)**  | Exportar datos para análisis        | ⭐ Básico       |
-| **[🧪 Testing con Postman](guides/POSTMAN_GUIDE.md)** | 35 requests pre-configurados        | ⭐ Básico       |
-| **[💡 Ejemplos de Integración](guides/EXAMPLES.md)**  | Código real de uso                  | ⭐⭐ Intermedio |
+| **[🧪 Testing con Postman](guides/POSTMAN_GUIDE.md)** | Requests pre-configurados        | ⭐ Básico       |
 
 ### Para Desarrolladores
 
@@ -34,7 +46,6 @@ Si eres nuevo en SmartFloors, empieza aquí:
 | **[🔧 Configuración](development/CONFIGURATION.md)**           | Variables de entorno      | ⭐ Básico       |
 | **[📧 Setup de Email](development/EMAIL_SETUP.md)**            | Notificaciones por correo | ⭐⭐ Intermedio |
 | **[🐛 Troubleshooting](development/TROUBLESHOOTING.md)**       | Solución de problemas     | ⭐ Básico       |
-| **[🤝 Contribuir](development/CONTRIBUTING.md)**               | Guía para contributors    | ⭐⭐ Intermedio |
 
 ---
 
@@ -42,25 +53,33 @@ Si eres nuevo en SmartFloors, empieza aquí:
 
 ```
 docs/
-├── README.md                    # Este archivo - índice principal
-├── guides/                      # Guías para usuarios
-│   ├── QUICK_START.md          # Inicio rápido
-│   ├── INSTALLATION.md         # Instalación completa
-│   ├── FRONTEND_INTEGRATION.md # Integrar frontend
-│   ├── EXPORT_CSV_GUIDE.md     # Exportación de datos
-│   ├── POSTMAN_GUIDE.md        # Testing con Postman
-│   ├── EXAMPLES.md             # Ejemplos de código
-│   └── FAQ.md                  # Preguntas frecuentes
-├── api/                         # Documentación de API
-│   ├── API_REFERENCE.md        # Referencia completa
-│   └── WEBSOCKET_GUIDE.md      # Guía de WebSocket
-└── development/                 # Para desarrolladores
-    ├── ARCHITECTURE.md         # Arquitectura del sistema
-    ├── CONFIGURATION.md        # Configuración avanzada
-    ├── EMAIL_SETUP.md          # Setup de emails
-    ├── EMAIL_README.md         # Info adicional de emails
-    ├── TROUBLESHOOTING.md      # Solución de problemas
-    └── CONTRIBUTING.md         # Guía de contribución
+├── README.md                      # 🏠 Este archivo - índice principal
+│
+├── HACKATHON_README.md (root)     # 🏆 README principal para hackathon
+├── CREATIVE_VISION.md             # 🎨 Visión creativa del proyecto
+├── TECHNICAL_DECISIONS.md         # 🏗️ Decisiones técnicas justificadas
+├── JUDGES_GUIDE.md                # 📋 Guía para evaluadores
+│
+├── guides/                        # 👥 Guías para usuarios
+│   ├── QUICK_START.md            
+│   ├── INSTALLATION.md           
+│   ├── FRONTEND_INTEGRATION.md   
+│   ├── EXPORT_CSV_GUIDE.md       
+│   └── POSTMAN_GUIDE.md          
+│
+├── api/                           # 🌐 Referencia técnica de API
+│   ├── API_REFERENCE.md          
+│   └── WEBSOCKET_GUIDE.md        
+│
+├── development/                   # 🛠️ Para desarrolladores
+│   ├── ARCHITECTURE.md           
+│   ├── CONFIGURATION.md          
+│   ├── EMAIL_SETUP.md            
+│   ├── EMAIL_README.md           
+│   └── TROUBLESHOOTING.md        
+│
+└── archive/                       # 📦 Documentos históricos
+    └── (implementaciones anteriores)
 ```
 
 ---

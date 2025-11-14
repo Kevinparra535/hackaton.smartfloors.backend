@@ -158,9 +158,13 @@ npm start          # Production mode
 npm run lint       # ESLint check
 npm run format     # Prettier format
 
-# Testing (bash scripts - adjust for PowerShell if needed)
-./test-validation.sh    # Validates all endpoints
-./test-mejoras.sh       # Tests enhancements
+# Testing (bash scripts - for PowerShell, run manually)
+bash test-validation.sh    # Validates all endpoints
+bash test-mejoras.sh       # Tests enhancements
+
+# PowerShell equivalents
+npm run dev                # Same as bash
+curl http://localhost:3000/health  # Quick health check
 ```
 
 **Server startup sequence**:
@@ -229,6 +233,35 @@ const schema = Joi.object({
 
 **If extending**: Uncomment line 18, implement TODOs, add env variables per `EMAIL_SETUP.md`
 
+## CSV Export Pattern
+
+**CSV generation uses helper utilities** in `src/utils/csv.helpers.js`:
+
+```javascript
+// Export controllers use these helpers
+const { alertsToCSV, historyToCSV } = require('../utils/csv.helpers');
+
+// Flatten complex alert structures for CSV
+const csvContent = alertsToCSV(filteredAlerts);
+
+// Set proper headers for download
+res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+res.setHeader('Content-Disposition', 'attachment; filename="alerts.csv"');
+res.send(csvContent);
+```
+
+**Key features** (in `csv.helpers.js`):
+- `alertsToCSV()`: Flattens nested alert anomalies into rows (one row per anomaly)
+- `historyToCSV()`: Converts floor history to tabular format
+- `jsonToCSV()`: Generic converter with automatic escaping for commas/quotes
+- Handles null/undefined values gracefully
+- Converts objects/arrays to JSON strings within cells
+
+**Export filtering** (see `src/schemas/export.schema.js`):
+- Alerts: Filter by date range, severity, floorId, type, isPredictive
+- History: Filter by date range, floorId, limit (max 100,000 records)
+- All filters validated via Joi before controller execution
+
 ## Key Environment Variables
 
 ```env
@@ -256,6 +289,11 @@ GET  /api/v1/floors/:id                # Single floor (id: 1-100)
 GET  /api/v1/floors/:id/history        # History (query: limit 1-1440)
 GET  /api/v1/floors/:id/predictions    # Predictions (query: minutesAhead 10-180)
 GET  /api/v1/alerts                    # All active alerts
+
+# Export endpoints (CSV generation)
+GET  /api/v1/export/stats              # Statistics of exportable data
+GET  /api/v1/export/alerts/csv         # Export alerts (filters: startDate, endDate, severity, floorId, type, isPredictive)
+GET  /api/v1/export/history/csv        # Export history (filters: startDate, endDate, floorId, limit)
 
 # Email endpoints (if implemented)
 GET  /api/v1/email/status              # Email service status
@@ -294,6 +332,18 @@ curl http://localhost:3000/api/v1/floors
 2. **New service**: Create in `services/` → initialize in `src/sockets/index.js` → export getter
 3. **New validation**: Define in `schemas/validator.schema.js` → apply in route
 4. **New socket event**: Add listener in `src/sockets/index.js` → document in README
+5. **New router module**: Create in `routes/` → import in `src/routes/index.js` → mount with `app.use()`
+
+**Router mounting pattern** (in `src/routes/index.js`):
+```javascript
+const newRoutes = require('./new.router');
+
+function routerApi(app) {
+  app.use('/api/v1/', homeRoutes);
+  app.use('/api/v1/', floorsRoutes);
+  app.use('/api/v1/new', newRoutes);  // Mount new router
+}
+```
 
 ## Documentation References
 
@@ -302,6 +352,12 @@ curl http://localhost:3000/api/v1/floors
 - `EMAIL_SETUP.md` - EmailJS implementation (incomplete feature)
 - `POSTMAN_GUIDE.md` - API testing guide
 - `QUICK_START.md` - Quick reference
+
+**Documentation is organized in `docs/` directory**:
+- `docs/guides/` - User-focused guides (installation, quick start, integration)
+- `docs/api/` - API reference and WebSocket guide
+- `docs/development/` - Developer documentation (architecture, configuration, troubleshooting)
+- `docs/archive/` - Historical implementation notes and verification reports
 
 ---
 

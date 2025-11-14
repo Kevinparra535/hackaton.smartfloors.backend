@@ -1,4 +1,272 @@
-# 🏢 SmartFloors - Sistema de Monitoreo Inteligente de Edificios# 🏢 SmartFloors Backend
+# 🏢 SmartFloors Backend
+
+> **"Un edificio que respira, predice y reacciona"**
+
+[![Node.js](https://img.shields.io/badge/Node.js-16%2B-green)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-blue)](https://expressjs.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black)](https://socket.io/)
+[![License](https://img.shields.io/badge/license-ISC-blue)](LICENSE)
+
+Backend para sistema de monitoreo inteligente de edificios en tiempo real con predicciones ML y detección de anomalías.
+
+**Desarrollado para Hackathon Universitario 2025** 🚀
+
+---
+
+## 🎯 ¿Qué es SmartFloors?
+
+SmartFloors transforma edificios tradicionales en **organismos vivos** capaces de:
+
+- 🫁 **Respirar** — Cada piso pulsa y reacciona según su estado térmico
+- 🧠 **Predecir** — Anticipa problemas hasta 180 minutos antes
+- 🚨 **Comunicar** — Genera alertas contextuales con recomendaciones
+- 📊 **Analizar** — Exporta datos para análisis profundo
+
+---
+
+## 📚 Documentación
+
+### 🏆 Para Hackathon
+
+- **[📘 HACKATHON_README.md](HACKATHON_README.md)** - README completo con pitch, arquitectura y visión
+- **[🎨 Visión Creativa](docs/CREATIVE_VISION.md)** - Manifiesto: El edificio como organismo vivo
+- **[🏗️ Decisiones Técnicas](docs/TECHNICAL_DECISIONS.md)** - Justificación de arquitectura
+- **[📋 Guía para Jurado](docs/JUDGES_GUIDE.md)** - Criterios de evaluación
+
+### 📖 Documentación General
+
+- **[🏠 Centro de Documentación](docs/README.md)** - Índice completo
+- **[⚡ Inicio Rápido](docs/guides/QUICK_START.md)** - Configura en 5 minutos
+- **[🌐 API Reference](docs/api/API_REFERENCE.md)** - Endpoints completos
+- **[🔌 WebSocket Guide](docs/api/WEBSOCKET_GUIDE.md)** - Tiempo real
+
+---
+
+## 🚀 Inicio Rápido
+
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/Kevinparra535/hackaton.smartfloors.backend.git
+cd hackaton.smartfloors.backend
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Iniciar servidor
+npm run dev
+```
+
+**¡Servidor corriendo en `http://localhost:3000`!**
+
+Verificar:
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/floors
+```
+
+---
+
+## ✨ Características Principales
+
+### 📡 Monitoreo en Tiempo Real
+- Datos actualizados cada 60 segundos vía WebSocket
+- Historial de 24 horas por piso (1440 registros)
+- Broadcast automático a todos los clientes conectados
+
+### 🔮 Predicciones ML
+- Algoritmo híbrido: 60% Moving Average + 40% Linear Regression
+- Predicciones de 10 a 180 minutos al futuro
+- Métricas: temperatura, humedad, ocupación, consumo energético
+
+### 🚨 Sistema de Alertas Inteligente
+- **10 tipos de alertas**: 6 actuales + 4 preventivas
+- **Detección de sobrecarga térmica** (temperatura + energía combinados)
+- **Alertas preventivas**: Anticipa problemas antes de que ocurran
+- Recomendaciones contextuales automáticas
+
+### 📊 Exportación CSV
+- Filtros avanzados (fecha, severidad, piso, tipo)
+- Compatible con Excel, Power BI, Python, R
+- Helpers especializados para estructuras complejas
+
+---
+
+## 🏗️ Arquitectura
+
+**Patrón clave:** Servicios Singleton compartidos entre REST y WebSocket
+
+```
+Express REST API  ←→  Singleton Services  ←→  Socket.IO WebSocket
+                           ↓
+                      In-Memory State
+                   (History + Alerts)
+```
+
+**Stack:**
+- Node.js 16+ + Express 4.x
+- Socket.IO 4.x (WebSocket)
+- Joi 18.x (Validación)
+- @hapi/boom 10.x (Errores HTTP)
+
+---
+
+## 📊 API Endpoints
+
+```http
+# Pisos
+GET  /api/v1/floors                    # Todos los pisos actuales
+GET  /api/v1/floors/:id                # Piso específico
+GET  /api/v1/floors/:id/history        # Historial (query: limit 1-1440)
+GET  /api/v1/floors/:id/predictions    # Predicciones ML (query: minutesAhead 10-180)
+GET  /api/v1/floors/stats              # Estadísticas del edificio
+
+# Alertas
+GET  /api/v1/alerts                    # Alertas activas (filtros: severity, floorId, type)
+
+# Exportación
+GET  /api/v1/export/stats              # Estadísticas de exportación
+GET  /api/v1/export/alerts/csv         # Exportar alertas a CSV
+GET  /api/v1/export/history/csv        # Exportar historial a CSV
+```
+
+**[Ver documentación completa de API →](docs/api/API_REFERENCE.md)**
+
+---
+
+## 🔌 WebSocket (Tiempo Real)
+
+```javascript
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3000');
+
+// Datos de pisos (cada 60s)
+socket.on('floor-data', (data) => {
+  console.log(data.floors);
+});
+
+// Alertas nuevas
+socket.on('new-alerts', (data) => {
+  console.log(data.alerts);
+});
+
+// Predicciones ML
+socket.on('predictions', (data) => {
+  console.log(data.predictions);
+});
+```
+
+**[Ver guía completa de WebSocket →](docs/api/WEBSOCKET_GUIDE.md)**
+
+---
+
+## 🧪 Testing
+
+### Con Postman
+Importar colección: `postman/SmartFloors.postman_collection.json`
+
+### Scripts
+```bash
+npm run dev        # Desarrollo con auto-reload
+npm start          # Producción
+npm run lint       # Lint code
+npm run format     # Format code
+```
+
+---
+
+## ⚙️ Configuración
+
+Variables de entorno (`.env`):
+
+```env
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+SIMULATION_INTERVAL=60000
+NUMBER_OF_FLOORS=5
+BUILDING_NAME=Edificio Principal
+```
+
+**[Ver configuración completa →](docs/development/CONFIGURATION.md)**
+
+---
+
+## 🎓 Para el Jurado
+
+### Innovación Técnica
+✅ Arquitectura singleton compartida (REST + WebSocket)  
+✅ ML híbrido implementado desde cero  
+✅ Sistema de alertas preventivas (único)  
+✅ Exportación CSV con helpers especializados  
+
+### Innovación Creativa
+✅ Metáfora del edificio como organismo vivo  
+✅ Datos estructurados para narrativa visual  
+✅ Alertas como "diálogo" entre edificio y usuario  
+
+### Complejidad
+✅ WebSocket + REST sincronizados  
+✅ Pipeline de validación con Joi + closure factory  
+✅ Gestión de memoria con pruning inteligente  
+✅ Manejo de errores en 3 capas  
+
+**[Ver guía completa para jurado →](docs/JUDGES_GUIDE.md)**
+
+---
+
+## 📂 Estructura del Proyecto
+
+```
+hackaton.smartfloors.backend/
+├── src/
+│   ├── controllers/      # Lógica de endpoints
+│   ├── routes/           # Definición de rutas
+│   ├── services/         # Servicios singleton (simulador, ML, alertas)
+│   ├── schemas/          # Validaciones Joi
+│   ├── middlewares/      # Validación y manejo de errores
+│   ├── sockets/          # Configuración WebSocket
+│   └── utils/            # Helpers (CSV, etc)
+├── docs/                 # Documentación completa
+├── postman/              # Colección Postman
+└── index.js              # Punto de entrada
+```
+
+---
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crea tu rama (`git checkout -b feature/AmazingFeature`)
+3. Commit cambios (`git commit -m 'Add: AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+---
+
+## 📄 Licencia
+
+ISC License - ver [LICENSE](LICENSE)
+
+---
+
+## 📬 Enlaces
+
+- 🐛 [Issues](https://github.com/Kevinparra535/hackaton.smartfloors.backend/issues)
+- 📚 [Documentación](docs/)
+- 🧪 [Postman Collection](postman/SmartFloors.postman_collection.json)
+
+---
+
+<div align="center">
+
+**⭐ Si te gusta este proyecto, dale una estrella ⭐**
+
+**Desarrollado con ❤️ para Hackathon 2025**
+
+[⬆ Volver arriba](#-smartfloors-backend)
+
+</div>
 
 
 
